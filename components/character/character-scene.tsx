@@ -148,9 +148,10 @@ export function CharacterScene() {
       halfHeight = Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV / 2)) * CAMERA_Z;
       halfWidth = halfHeight * camera.aspect;
 
-      // He's authored large for desktop; on narrow screens the copy runs full
-      // width, so scale him back down to stay a background element behind it.
-      scaleMultiplier = w < 768 ? 0.46 : w < 1100 ? 0.7 : 1;
+      // He's authored large for desktop; on narrower screens the copy runs
+      // nearly full width, so scale him down harder to stay a background
+      // element rather than sitting on the words.
+      scaleMultiplier = w < 768 ? 0.46 : w < 1100 ? 0.58 : 1;
 
       measure();
     };
@@ -160,6 +161,14 @@ export function CharacterScene() {
     /** Spring velocity, one per scalar field. */
     const velocity: Record<string, number> = {};
     for (const k of POSE_KEYS) velocity[k] = 0;
+
+    // Dwell-and-dash. The character HOLDS his pose while a section is anywhere
+    // near view, and makes the trip to the next beat only inside the middle
+    // slice of the gap between sections. Interpolating linearly across the
+    // whole gap parked him mid-journey — usually on top of the copy — at most
+    // scroll offsets.
+    const HOLD_IN = 0.34;
+    const HOLD_OUT = 0.66;
 
     const poseFromScroll = (out: Pose) => {
       const maxScroll =
@@ -172,8 +181,9 @@ export function CharacterScene() {
 
       const span = stops[i + 1] - stops[i];
       const u = span > 0 ? (clamped - stops[i]) / span : 0;
+      const dash = Math.min(1, Math.max(0, (u - HOLD_IN) / (HOLD_OUT - HOLD_IN)));
 
-      return lerpPose(POSES[i], POSES[i + 1], smoothstep(u), out);
+      return lerpPose(POSES[i], POSES[i + 1], smoothstep(dash), out);
     };
 
     const charQuat = new THREE.Quaternion();

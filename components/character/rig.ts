@@ -84,7 +84,7 @@ export const POSES: Pose[] = [
   //     turned down-left toward his own bio. The chair prop fades in with
   //     `sit`.
   {
-    rootX: 0.78, rootY: 0.42, rootZ: -1.2, rootRotX: 0, rootRotY: d(26), rootRotZ: 0, scale: 0.95,
+    rootX: 0.84, rootY: 0.42, rootZ: -1.2, rootRotX: 0, rootRotY: d(26), rootRotZ: 0, scale: 0.95,
     torsoRotX: d(2), torsoRotY: d(-6), headRotX: d(10), headRotY: d(-26), sit: 1,
     armL: [0.28, -0.75, 0.45], foreL: [0.12, -0.30, 0.92],
     armR: [-0.28, -0.75, 0.45], foreR: [-0.12, -0.30, 0.92],
