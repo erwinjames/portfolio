@@ -282,6 +282,75 @@ export function prepareModel(gltf: THREE.Group, targetHeight = 1.95): Skeleton {
   };
 }
 
+/**
+ * A simple four-legged chair in the page's palette, sized for the normalized
+ * (1.95-unit) character and meant to be parented to the character root so it
+ * travels, turns, and scales with him. Materials are transparent so the About
+ * beat can fade it in and out via the pose's `sit` scalar.
+ */
+export function buildChair(): {
+  group: THREE.Group;
+  materials: THREE.MeshStandardMaterial[];
+  dispose: () => void;
+} {
+  const group = new THREE.Group();
+  const geos: THREE.BufferGeometry[] = [];
+
+  const wood = new THREE.MeshStandardMaterial({
+    color: 0x2e2118,
+    roughness: 0.7,
+    metalness: 0.08,
+    flatShading: true,
+    transparent: true,
+    opacity: 0,
+  });
+  const trim = new THREE.MeshStandardMaterial({
+    color: 0x8a5f2e,
+    roughness: 0.5,
+    metalness: 0.15,
+    transparent: true,
+    opacity: 0,
+  });
+
+  const box = (
+    w: number, h: number, dp: number,
+    x: number, y: number, z: number,
+    mat: THREE.Material,
+  ) => {
+    const g = new THREE.BoxGeometry(w, h, dp);
+    geos.push(g);
+    const mesh = new THREE.Mesh(g, mat);
+    mesh.position.set(x, y, z);
+    group.add(mesh);
+    return mesh;
+  };
+
+  // Seat, with a thin amber-toned edge strip so it reads against the ink.
+  box(0.68, 0.07, 0.6, 0, -0.16, 0.12, wood);
+  box(0.68, 0.015, 0.6, 0, -0.115, 0.12, trim);
+
+  // Backrest, tilted back a touch.
+  const back = box(0.68, 0.78, 0.06, 0, 0.22, -0.21, wood);
+  back.rotation.x = THREE.MathUtils.degToRad(-7);
+
+  // Legs.
+  for (const sx of [-1, 1] as const) {
+    for (const sz of [-1, 1] as const) {
+      box(0.055, 0.62, 0.055, 0.29 * sx, -0.5, 0.12 + 0.24 * sz, wood);
+    }
+  }
+
+  return {
+    group,
+    materials: [wood, trim],
+    dispose: () => {
+      for (const g of geos) g.dispose();
+      wood.dispose();
+      trim.dispose();
+    },
+  };
+}
+
 const _euler = new THREE.Euler();
 const _delta = new THREE.Quaternion();
 

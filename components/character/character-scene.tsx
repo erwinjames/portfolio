@@ -4,7 +4,13 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
-import { aimBone, prepareModel, setBone, type Skeleton } from "./model";
+import {
+  aimBone,
+  buildChair,
+  prepareModel,
+  setBone,
+  type Skeleton,
+} from "./model";
 import {
   clonePose,
   lerpPose,
@@ -224,6 +230,22 @@ export function CharacterScene() {
       skel = prepareModel(gltf.scene as unknown as THREE.Group);
       scene.add(skel.root);
 
+      // The chair rides on the character root, so it travels, turns, and
+      // scales with him; the About beat fades it in via the pose's `sit`.
+      const chair = buildChair();
+      chair.group.position.set(0, 0.02, -0.02);
+      skel.root.add(chair.group);
+
+      const setChair = (sit: number) => {
+        // Remapped to the tail of the blend: the chair only materialises once
+        // he's nearly seated. Fading it linearly with `sit` dragged a ghost
+        // chair across the page for the whole transition.
+        const t = Math.min(1, Math.max(0, (sit - 0.65) / 0.35));
+        const opacity = t * t * (3 - 2 * t);
+        chair.group.visible = opacity > 0.02;
+        for (const m of chair.materials) m.opacity = opacity;
+      };
+
       poseFromScroll(target);
       Object.assign(current, target);
       for (const k of POSE_DIRS) current[k] = [...target[k]] as typeof current.armL;
@@ -233,6 +255,7 @@ export function CharacterScene() {
         // Reduced motion: one static frame in the resting pose. No travel,
         // no idle, no loop.
         applyPose(skel, POSES[0]);
+        setChair(POSES[0].sit);
         practical.position.set(
           POSES[0].rootX * halfWidth + 1,
           POSES[0].rootY * halfHeight + 1,
@@ -279,6 +302,7 @@ export function CharacterScene() {
         }
 
         applyPose(skel, current);
+        setChair(Math.min(1, Math.max(0, current.sit)));
 
         // ---- Idle life, layered on top of the settled pose ------------------
         // Breath: the chest rises on a slow cycle.
