@@ -10,7 +10,7 @@ import * as THREE from "three";
 export const VISIBLE_PARTS = new Set([
   "Body_010",
   "Male_emotion_usual_001",
-  "Hairstyle_male_010",
+  "Hairstyle_male_012",
   "Glasses_004",
   "T_Shirt_009",
   "Pants_010",
@@ -63,6 +63,101 @@ export type Skeleton = {
   dispose: () => void;
 };
 
+/** The duotone ramp he gets remapped onto: ink in shadow, amber through the
+ *  mids, warm bone in the highlights. These are the page's own colours. */
+const RAMP: [number, string][] = [
+  [0.0, "#0b0d11"],
+  [0.45, "#4a3520"],
+  [0.72, "#a9743a"],
+  [0.9, "#d7b184"],
+  [1.0, "#f0e3cd"],
+];
+
+/**
+ * Rebuilds the pack's colour atlas as a duotone.
+ *
+ * The stock textures are saturated cartoon primaries — a cornflower tee, grass
+ * green cargos. Against an ink page with an amber accent that is a HUE clash,
+ * not a brightness one, so dimming them only ever produced a darker blue. This
+ * takes each texel's luminance and remaps it through the site's own ramp, which
+ * keeps every bit of the artist's shading and shadow detail while putting the
+ * whole figure in the page's colour story.
+ *
+ * Returns null if the texture image can't be read, in which case the caller
+ * keeps the original map rather than rendering him untextured.
+ */
+function duotoneTexture(source: THREE.Texture): THREE.CanvasTexture | null {
+  const image = source.image as CanvasImageSource & {
+    width?: number;
+    height?: number;
+  };
+  const w = image?.width ?? 0;
+  const h = image?.height ?? 0;
+  if (!w || !h) return null;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) return null;
+
+  ctx.drawImage(image, 0, 0, w, h);
+
+  // Build a 256-entry lookup of the ramp so the per-pixel loop is just indexing.
+  //
+  // The hex is parsed by hand rather than through THREE.Color on purpose:
+  // THREE.Color converts hex into the LINEAR working colour space, and we are
+  // writing bytes into an sRGB canvas. Routing the ramp through it crushed the
+  // shadow stop from ~13 to ~1 and rendered him effectively black.
+  const lut = new Uint8Array(256 * 3);
+  const stops = RAMP.map(([at, hex]) => {
+    const n = parseInt(hex.slice(1), 16);
+    return { at, r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  });
+
+  for (let i = 0; i < 256; i++) {
+    const t = i / 255;
+    let a = stops[0];
+    let b = stops[stops.length - 1];
+    for (let s = 0; s < stops.length - 1; s++) {
+      if (t >= stops[s].at && t <= stops[s + 1].at) {
+        a = stops[s];
+        b = stops[s + 1];
+        break;
+      }
+    }
+    const span = b.at - a.at;
+    const u = span > 0 ? (t - a.at) / span : 0;
+    lut[i * 3] = a.r + (b.r - a.r) * u;
+    lut[i * 3 + 1] = a.g + (b.g - a.g) * u;
+    lut[i * 3 + 2] = a.b + (b.b - a.b) * u;
+  }
+
+  const img = ctx.getImageData(0, 0, w, h);
+  const px = img.data;
+  for (let i = 0; i < px.length; i += 4) {
+    // Rec. 709 luma — perceptual, so the green cargos don't come out lighter
+    // than the blue tee just because green reads brighter to a naive average.
+    const luma =
+      (0.2126 * px[i] + 0.7152 * px[i + 1] + 0.0722 * px[i + 2]) | 0;
+    const o = luma * 3;
+    px[i] = lut[o];
+    px[i + 1] = lut[o + 1];
+    px[i + 2] = lut[o + 2];
+  }
+  ctx.putImageData(img, 0, 0);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.flipY = false; // glTF UVs assume an unflipped texture; CanvasTexture flips by default
+  tex.wrapS = source.wrapS;
+  tex.wrapT = source.wrapT;
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+  return tex;
+}
+
 /**
  * Prepares a loaded glTF scene: hides the parts we don't want, finds the bones,
  * records the bind pose, and normalizes the model to a known height so the
@@ -88,15 +183,44 @@ export function prepareModel(gltf: THREE.Group, targetHeight = 1.95): Skeleton {
     }
   });
 
-  // The pack's palette is bright cartoon primaries — a blue tee and green
-  // cargo pants read as a sticker pasted onto the page. Tint every material
-  // down so he sits in the scene as a warm, dark figure lit by the amber rim.
+  // Recolour him into the page's palette, then let the amber rim do the
+  // modelling. The duotone is what makes him look art-directed rather than
+  // like stock geometry dropped onto a dark background.
+  const rebuilt = new Map<THREE.Texture, THREE.CanvasTexture>();
+
   for (const m of materials) {
     const mat = m as THREE.MeshStandardMaterial;
-    if (mat.color) mat.color.multiply(new THREE.Color(0.3, 0.31, 0.38));
-    if (mat.roughness !== undefined) mat.roughness = 0.72;
-    if (mat.metalness !== undefined) mat.metalness = 0.12;
+
+    if (mat.map) {
+      let ramped = rebuilt.get(mat.map);
+      if (!ramped) {
+        const made = duotoneTexture(mat.map);
+        if (made) {
+          rebuilt.set(mat.map, made);
+          ramped = made;
+        }
+      }
+      if (ramped) {
+        mat.map.dispose();
+        mat.map = ramped;
+      }
+    }
+
+    // The ramp already carries the colour, so the base tint stays neutral and
+    // only sets overall level.
+    if (mat.color) mat.color.setScalar(0.92);
+    if (mat.roughness !== undefined) mat.roughness = 0.64;
+    if (mat.metalness !== undefined) mat.metalness = 0.05;
+
+    // Image-based lighting gives the surfaces something real to reflect, but
+    // kept low: at full strength it floods the figure and he reads as a bright
+    // toy stuck on the page instead of a form emerging from the dark.
+    mat.envMapIntensity = 0.14;
+
+    mat.needsUpdate = true;
   }
+
+  const madeTextures = [...rebuilt.values()];
 
   for (const [key, name] of Object.entries(BONE_NAMES) as [BoneKey, string][]) {
     const bone = gltf.getObjectByName(name) as THREE.Bone | undefined;
@@ -153,6 +277,7 @@ export function prepareModel(gltf: THREE.Group, targetHeight = 1.95): Skeleton {
     dispose: () => {
       for (const g of geometries) g.dispose();
       for (const m of materials) m.dispose();
+      for (const t of madeTextures) t.dispose();
     },
   };
 }

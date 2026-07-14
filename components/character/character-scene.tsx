@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { aimBone, prepareModel, setBone, type Skeleton } from "./model";
 import {
   clonePose,
@@ -15,10 +16,21 @@ import {
 } from "./rig";
 
 /** Sections the character keys off, in scroll order. One per pose in POSES. */
-const SECTION_IDS = ["top", "about", "work", "skills", "contact"];
+const SECTION_IDS = ["top", "about", "work", "projects", "skills", "contact"];
 
 const CAMERA_FOV = 34;
 const CAMERA_Z = 6;
+
+/** Pose-transition spring. Slightly underdamped, so limbs settle with a touch
+ *  of overshoot instead of easing in dead-flat — that's the difference between
+ *  "interpolated" and "animated". */
+const STIFFNESS = 42;
+const DAMPING = 11;
+
+/** Forearms and shins chase their parent limb a beat late. Real bodies have
+ *  this lag, and without it the arm swings as one rigid plank. */
+const LAG_UPPER = 9;
+const LAG_LOWER = 5.5;
 
 export function CharacterScene() {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -48,22 +60,43 @@ export function CharacterScene() {
     });
     renderer.setClearAlpha(0);
     renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+    // Filmic response curve. Without this the amber key light clips to a flat
+    // orange; ACES rolls the highlights off and is most of why he now reads as
+    // "rendered" rather than "lit by three lamps in a void".
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 0.95; // the duotone ramp already sets his level
+
     host.appendChild(renderer.domElement);
 
-    // ---- Lighting: cool fill, warm amber key + rim, to match the page.
-    scene.add(new THREE.AmbientLight(0x4a5262, 1.4));
+    // Image-based lighting. RoomEnvironment is generated in-memory — no HDR
+    // file to ship — and gives the materials something real to reflect.
+    const pmrem = new THREE.PMREMGenerator(renderer);
+    const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    scene.environment = envRT.texture;
 
-    const key = new THREE.DirectionalLight(0xffe6c4, 2.2);
-    key.position.set(3, 4, 5);
+    // ---- Lighting: a low ambient bed, a restrained key, and a hot amber rim.
+    // The rim is the loudest light on purpose — it carves his edge out of the
+    // ink and ties him to the page's accent colour, which is what sells the
+    // whole thing as one image rather than a model floating over a website.
+    scene.add(new THREE.AmbientLight(0x222836, 0.5));
+
+    const key = new THREE.DirectionalLight(0xffdcb0, 1.15);
+    key.position.set(3, 4.5, 5);
     scene.add(key);
 
-    const rim = new THREE.DirectionalLight(0xd99a4e, 2.6);
-    rim.position.set(-4, 1.5, -3);
+    const rim = new THREE.DirectionalLight(0xd99a4e, 4.2);
+    rim.position.set(-4.5, 1.8, -3.5);
     scene.add(rim);
 
-    const fill = new THREE.PointLight(0x9fb4d8, 10, 14);
-    fill.position.set(-2.5, -1, 3);
-    scene.add(fill);
+    const bounce = new THREE.PointLight(0x6f86ad, 3.5, 16);
+    bounce.position.set(-2.5, -1.5, 3);
+    scene.add(bounce);
+
+    // A warm practical that rides along with him, so he never falls fully flat
+    // against the page as he travels.
+    const practical = new THREE.PointLight(0xe0a355, 7, 9, 2);
+    scene.add(practical);
 
     // ---- Viewport-derived placement -----------------------------------------
     let halfHeight = 1;
@@ -108,6 +141,7 @@ export function CharacterScene() {
 
       halfHeight = Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV / 2)) * CAMERA_Z;
       halfWidth = halfHeight * camera.aspect;
+
       // He's authored large for desktop; on narrow screens the copy runs full
       // width, so scale him back down to stay a background element behind it.
       scaleMultiplier = w < 768 ? 0.46 : w < 1100 ? 0.7 : 1;
@@ -117,6 +151,9 @@ export function CharacterScene() {
 
     const target = clonePose(POSES[0]);
     const current = clonePose(POSES[0]);
+    /** Spring velocity, one per scalar field. */
+    const velocity: Record<string, number> = {};
+    for (const k of POSE_KEYS) velocity[k] = 0;
 
     const poseFromScroll = (out: Pose) => {
       const maxScroll =
@@ -189,51 +226,85 @@ export function CharacterScene() {
 
       poseFromScroll(target);
       Object.assign(current, target);
+      for (const k of POSE_DIRS) current[k] = [...target[k]] as typeof current.armL;
       applyPose(skel, current);
 
       if (reduced) {
         // Reduced motion: one static frame in the resting pose. No travel,
         // no idle, no loop.
         applyPose(skel, POSES[0]);
+        practical.position.set(
+          POSES[0].rootX * halfWidth + 1,
+          POSES[0].rootY * halfHeight + 1,
+          2,
+        );
         renderer.render(scene, camera);
         return;
       }
 
-      let last = performance.now();
-      let elapsed = 0;
+      // Timer (r183+) over Clock: it pauses while the tab is hidden, so the
+      // page doesn't lurch when you come back to it.
+      const timer = new THREE.Timer();
 
-      const tick = (now: number) => {
+      const tick = () => {
         raf = requestAnimationFrame(tick);
         if (!skel) return;
 
-        const dt = Math.min((now - last) / 1000, 0.05);
-        last = now;
-        elapsed += dt;
+        timer.update();
+        const dt = Math.min(timer.getDelta(), 0.05);
+        const elapsed = timer.getElapsed();
 
         poseFromScroll(target);
 
-        // Frame-rate independent damping, so the pose eases toward the scroll
-        // target instead of tracking it rigidly. Scalars and limb directions
-        // are damped separately — they're different shapes.
-        const k = 1 - Math.exp(-6 * dt);
-
-        for (const key of POSE_KEYS) {
-          current[key] += (target[key] - current[key]) * k;
+        // Scalars ride a spring — position, scale and turn overshoot a hair and
+        // settle, which is what makes the travel feel like weight rather than
+        // a lerp.
+        for (const k of POSE_KEYS) {
+          const force = (target[k] - current[k]) * STIFFNESS;
+          velocity[k] += (force - velocity[k] * DAMPING) * dt;
+          current[k] += velocity[k] * dt;
         }
 
-        for (const key of POSE_DIRS) {
-          const c = current[key];
-          const t = target[key];
-          c[0] += (t[0] - c[0]) * k;
-          c[1] += (t[1] - c[1]) * k;
-          c[2] += (t[2] - c[2]) * k;
+        // Limb directions damp instead — a springy overshoot on a joint angle
+        // looks broken, not alive. The lower limbs use a slower constant so
+        // they trail their parent: secondary motion.
+        for (const k of POSE_DIRS) {
+          const lower = k === "foreL" || k === "foreR" || k === "shinL" || k === "shinR";
+          const rate = 1 - Math.exp(-(lower ? LAG_LOWER : LAG_UPPER) * dt);
+          const c = current[k];
+          const t = target[k];
+          c[0] += (t[0] - c[0]) * rate;
+          c[1] += (t[1] - c[1]) * rate;
+          c[2] += (t[2] - c[2]) * rate;
         }
 
         applyPose(skel, current);
 
-        // Idle life on top of the pose: a slow float and sway.
-        skel.root.position.y += Math.sin(elapsed * 0.9) * 0.05;
+        // ---- Idle life, layered on top of the settled pose ------------------
+        // Breath: the chest rises on a slow cycle.
+        const breath = Math.sin(elapsed * 1.15);
+        skel.bones.chest?.scale.setScalar(1 + breath * 0.012);
+
+        // Weight shift: he sways gently from hip to hip, and floats.
+        skel.root.position.y += Math.sin(elapsed * 0.75) * 0.045;
+        skel.root.position.x += Math.sin(elapsed * 0.4) * 0.012;
+        skel.root.rotation.z += Math.sin(elapsed * 0.5) * 0.012;
         skel.root.rotation.y += Math.sin(elapsed * 0.45) * 0.05;
+
+        // The head leads the sway slightly, as a head does.
+        const head = skel.bones.head;
+        if (head) {
+          head.rotation.y += Math.sin(elapsed * 0.6 + 0.5) * 0.07;
+          head.rotation.x += Math.sin(elapsed * 0.9) * 0.03;
+        }
+
+        // Keep the warm practical riding just off his shoulder.
+        practical.position.set(
+          skel.root.position.x + 1.1,
+          skel.root.position.y + 1.2,
+          2.2,
+        );
+        practical.intensity = 6 + Math.sin(elapsed * 1.6) * 1.8;
 
         renderer.render(scene, camera);
       };
@@ -258,6 +329,8 @@ export function CharacterScene() {
       window.clearTimeout(remeasure);
       window.removeEventListener("resize", onResize);
       skel?.dispose();
+      envRT.dispose();
+      pmrem.dispose();
       renderer.dispose();
       renderer.domElement.remove();
     };

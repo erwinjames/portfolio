@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Erwin Manugas — Portfolio
 
-## Getting Started
+A cinematic scroll portfolio: dark ink, amber accent, film grain, and a 3D
+character who travels through the page — striking a different pose for every
+section as you scroll.
 
-First, run the development server:
+**Live sections:** Hero → About → Experience → Projects → Toolkit → Contact.
+
+## The 3D character
+
+- Loaded from a rigged GLB (modular character pack from Fab) and driven
+  bone-by-bone — no baked animation clips.
+- One pose keyframe per section, declared as limb *directions* in
+  [`components/character/rig.ts`](components/character/rig.ts); scrolling
+  blends between them with spring physics and secondary limb lag.
+- Recolored into the site palette at load by remapping his texture atlas
+  through an ink → amber → bone duotone ramp
+  ([`components/character/model.ts`](components/character/model.ts)).
+- Rendered with ACES filmic tone mapping and image-based lighting.
+- Fully static under `prefers-reduced-motion`.
+
+## Stack
+
+- [Next.js 16](https://nextjs.org) (App Router, static output)
+- [Tailwind CSS v4](https://tailwindcss.com)
+- [Three.js](https://threejs.org) — vanilla, no wrapper
+- TypeScript
+
+## Development
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev    # serves on http://localhost:3009
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npm run build` produces the static production build.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Editing content
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All copy lives in [`lib/resume.ts`](lib/resume.ts) — experience, projects,
+skills, and contact details. The components render whatever is there.
 
-## Learn More
+To move or re-pose the character, edit the labeled keyframes in
+[`components/character/rig.ts`](components/character/rig.ts): `rootX`/`rootY`
+are screen-fractions, limbs are direction vectors in the character's own space.
 
-To learn more about Next.js, take a look at the following resources:
+## Asset note
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+`public/models/character.glb` comes from the free "Creative Characters"
+pack by ithappy on [Fab](https://www.fab.com) and is included here to keep the
+site self-contained. If you fork this repo, check the Fab standard license
+before reusing the model elsewhere.

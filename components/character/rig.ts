@@ -75,35 +75,49 @@ export const POSES: Pose[] = [
     armR: [-0.30, -0.95, 0.06], foreR: [-0.20, -0.96, 0.20],
     ...STAND,
   },
-  // 1 — About: drifts to the right margin, pushed back, arms folded across the
-  //     chest, head turned to "read" the paragraph on the left.
+  // 1 — About: the "telling you about myself" beat. He drifts to the right
+  //     margin, turns toward his bio, one palm open toward the words, the
+  //     other arm across the waist.
   {
     rootX: 0.80, rootY: -0.26, rootZ: -1.2, rootRotX: 0, rootRotY: d(24), rootRotZ: 0, scale: 1.10,
-    torsoRotX: d(-3), torsoRotY: d(-8), headRotX: d(2), headRotY: d(-30),
-    armL: [0.38, -0.82, 0.42], foreL: [-0.82, -0.16, 0.55],
-    armR: [-0.38, -0.82, 0.42], foreR: [0.82, -0.16, 0.55],
+    torsoRotX: d(-3), torsoRotY: d(-8), headRotX: d(6), headRotY: d(-30),
+    armL: [0.30, -0.86, 0.30], foreL: [-0.18, 0.84, 0.42],
+    armR: [-0.36, -0.86, 0.30], foreR: [0.80, -0.10, 0.45],
     ...STAND,
   },
-  // 2 — Work: crosses to the empty lower-left column beneath the sticky year,
-  //     hunched forward, forearms reaching out over an invisible keyboard.
+  // 2 — Work: the "at the keyboard" beat, in the empty lower-left column under
+  //     the sticky year. Raised from the old spot — his feet were cropped by
+  //     the viewport bottom, which buried the pose.
   {
-    rootX: -0.56, rootY: -0.66, rootZ: -1.0, rootRotX: 0, rootRotY: d(30), rootRotZ: 0, scale: 1.06,
+    rootX: -0.62, rootY: -0.44, rootZ: -1.0, rootRotX: 0, rootRotY: d(30), rootRotZ: 0, scale: 0.98,
     torsoRotX: d(22), torsoRotY: d(-6), headRotX: d(16), headRotY: d(8),
     armL: [0.32, -0.88, 0.35], foreL: [0.16, -0.30, 0.94],
     armR: [-0.32, -0.88, 0.35], foreR: [-0.16, -0.30, 0.94],
     legL: [0.07, -1, 0.02], shinL: [0.03, -1, -0.05],
     legR: [-0.07, -1, 0.02], shinR: [-0.03, -1, -0.05],
   },
-  // 3 — Toolkit: drops into the open lower-right lane, clear of the marquee
-  //     bands and the skill columns, arms open presenting the stack.
+  // 3 — Projects: the "look what I built" beat. He stands in the left rail
+  //     under the project count, arm extended toward the card grid on the
+  //     right, head following the gesture.
   {
-    rootX: 0.90, rootY: -0.46, rootZ: -2.0, rootRotX: 0, rootRotY: d(-14), rootRotZ: 0, scale: 0.90,
-    torsoRotX: d(-8), torsoRotY: 0, headRotX: d(-14), headRotY: 0,
-    armL: [0.88, 0.18, 0.44], foreL: [0.80, 0.42, 0.43],
-    armR: [-0.88, 0.18, 0.44], foreR: [-0.80, 0.42, 0.43],
+    rootX: -0.62, rootY: -0.42, rootZ: -1.0, rootRotX: 0, rootRotY: d(-20), rootRotZ: 0, scale: 0.95,
+    torsoRotX: d(-4), torsoRotY: d(8), headRotX: d(-4), headRotY: d(18),
+    armL: [0.88, 0.28, 0.24], foreL: [0.94, 0.32, 0.10],
+    armR: [-0.28, -0.94, 0.10], foreR: [-0.18, -0.95, 0.22],
     ...STAND,
   },
-  // 4 — Contact: settles into the open right side, his left arm up mid-wave.
+  // 4 — Toolkit: the "craftsman" beat. Arms folded, chin up, surveying his own
+  //     stack — a deliberately narrow silhouette, because the only truly empty
+  //     spot in this section is the slot between the skill columns and the
+  //     education line.
+  {
+    rootX: 1.0, rootY: -0.52, rootZ: -2.0, rootRotX: 0, rootRotY: d(-14), rootRotZ: 0, scale: 0.80,
+    torsoRotX: d(-6), torsoRotY: 0, headRotX: d(-8), headRotY: d(14),
+    armL: [0.38, -0.82, 0.42], foreL: [-0.82, -0.16, 0.55],
+    armR: [-0.38, -0.82, 0.42], foreR: [0.82, -0.16, 0.55],
+    ...STAND,
+  },
+  // 5 — Contact: settles into the open right side, his left arm up mid-wave.
   {
     rootX: 0.68, rootY: -0.24, rootZ: -0.4, rootRotX: 0, rootRotY: d(-18), rootRotZ: 0, scale: 1.28,
     torsoRotX: d(-2), torsoRotY: d(6), headRotX: d(-6), headRotY: d(16),

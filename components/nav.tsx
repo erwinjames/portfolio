@@ -6,6 +6,7 @@ import { profile } from "@/lib/resume";
 const SECTIONS = [
   { id: "about", label: "About" },
   { id: "work", label: "Work" },
+  { id: "projects", label: "Projects" },
   { id: "skills", label: "Skills" },
   { id: "contact", label: "Contact" },
 ];

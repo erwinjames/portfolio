@@ -115,13 +115,18 @@ body {
   opacity: calc(0.5 - var(--p) * 0.4);
 }
 
-/* Title letters rise on load */
+/* Title letters rise on load — held back until the intro curtain is lifting,
+   or the whole reveal would play out behind it and be seen by nobody. */
+:root {
+  --intro-offset: 1150ms;
+}
+
 .letter {
   display: inline-block;
   transform: translateY(1.05em);
   opacity: 0;
   animation: letter-rise 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  animation-delay: var(--letter-delay, 0ms);
+  animation-delay: calc(var(--letter-delay, 0ms) + var(--intro-offset));
 }
 
 @keyframes letter-rise {
@@ -168,6 +173,11 @@ body {
   animation-direction: reverse;
 }
 
+/* Hovering a moving band is an implicit request to read it. */
+.marquee-mask:hover .marquee {
+  animation-play-state: paused;
+}
+
 @keyframes marquee-run {
   to {
     transform: translateX(-50%);
@@ -182,6 +192,32 @@ body {
     black 88%,
     transparent
   );
+}
+
+/* ---------- Intro curtain ---------- */
+
+.intro-rule {
+  width: 0;
+  animation: intro-draw 1s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+}
+
+@keyframes intro-draw {
+  to {
+    width: 100%;
+  }
+}
+
+/* ---------- Focus: visible for keyboard, silent for mouse ---------- */
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+
+a,
+button {
+  cursor: pointer;
 }
 
 /* ---------- Link underline sweep ---------- */
@@ -224,7 +260,8 @@ body {
   }
 
   .marquee,
-  .grain {
+  .grain,
+  .intro-rule {
     animation: none;
   }
 

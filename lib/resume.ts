@@ -5,6 +5,7 @@ export const profile = {
   location: "Lapu-Lapu City, Cebu, Philippines",
   email: "manugasewinjames@gmail.com",
   phone: "09674213409",
+  github: "https://github.com/erwinjames",
   summary:
     "I build web systems that people actually run their business on — point-of-sale and inventory platforms, hotel sites, internal tools. Seven years across development and systems administration means I don't just ship the interface; I keep the servers, databases, and networks behind it standing up.",
   tagline: "Systems that hold up under real use.",
@@ -84,6 +85,60 @@ export const jobs: Job[] = [
       "Designed posters and cards on request.",
     ],
     stack: ["Web", "Support", "Photoshop"],
+  },
+];
+
+export type Project = {
+  name: string;
+  repo: string;
+  description: string;
+  stack: string[];
+};
+
+/** Public repos on github.com/erwinjames, curated to match the resume story.
+ *  Stack tags come from the repos' actual language data. */
+export const projects: Project[] = [
+  {
+    name: "TinkerPro Support Suite",
+    repo: "https://github.com/erwinjames/tinkerpro_supports",
+    description:
+      "Cross-platform customer and employee support apps for the TinkerPro POS ecosystem, built with Flutter for Android, iOS, and desktop.",
+    stack: ["Flutter", "Dart", "Kotlin", "Swift"],
+  },
+  {
+    name: "Hotel Asia Cebu",
+    repo: "https://github.com/erwinjames/HotelAsiaCebuNew",
+    description:
+      "Responsive hotel website redesigned around how guests actually browse, with SEO baked in to lift search visibility.",
+    stack: ["HTML", "SCSS", "JavaScript"],
+  },
+  {
+    name: "E-commerce Platform",
+    repo: "https://github.com/erwinjames/ecommerce",
+    description:
+      "Full e-commerce build on Laravel — catalog, cart, and checkout flows rendered with Blade and progressively enhanced in TypeScript.",
+    stack: ["Laravel", "PHP", "TypeScript"],
+  },
+  {
+    name: "Task Management",
+    repo: "https://github.com/erwinjames/taskmanagement",
+    description:
+      "Team task tracker on the Laravel stack: assignments, statuses, and deadlines in a clean Blade UI.",
+    stack: ["Laravel", "PHP", "TypeScript"],
+  },
+  {
+    name: "Weather App",
+    repo: "https://github.com/erwinjames/weather_app_usingLaravel12andReact",
+    description:
+      "Live weather lookup pairing a Laravel 12 API backend with a React frontend — a modern take on the classic API integration exercise.",
+    stack: ["Laravel 12", "React", "TypeScript"],
+  },
+  {
+    name: "RSVP",
+    repo: "https://github.com/erwinjames/rsvp",
+    description:
+      "Event RSVP system for collecting and managing guest responses, written in TypeScript.",
+    stack: ["TypeScript", "JavaScript", "CSS"],
   },
 ];
 
