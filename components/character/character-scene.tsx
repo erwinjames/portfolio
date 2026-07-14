@@ -7,6 +7,7 @@ import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment
 import {
   aimBone,
   buildChair,
+  buildDesk,
   prepareModel,
   setBone,
   type Skeleton,
@@ -240,20 +241,32 @@ export function CharacterScene() {
       skel = prepareModel(gltf.scene as unknown as THREE.Group);
       scene.add(skel.root);
 
-      // The chair rides on the character root, so it travels, turns, and
-      // scales with him; the About beat fades it in via the pose's `sit`.
+      // Props ride on the character root, so they travel, turn, and scale
+      // with him; the seated beats fade them in via the pose's `sit`/`desk`.
       const chair = buildChair();
       chair.group.position.set(0, 0.02, -0.02);
       skel.root.add(chair.group);
 
-      const setChair = (sit: number) => {
-        // Remapped to the tail of the blend: the chair only materialises once
-        // he's nearly seated. Fading it linearly with `sit` dragged a ghost
-        // chair across the page for the whole transition.
-        const t = Math.min(1, Math.max(0, (sit - 0.65) / 0.35));
-        const opacity = t * t * (3 - 2 * t);
-        chair.group.visible = opacity > 0.02;
-        for (const m of chair.materials) m.opacity = opacity;
+      const desk = buildDesk();
+      desk.group.position.set(0, 0.02, 0);
+      skel.root.add(desk.group);
+
+      // Remapped to the tail of the blend: props only materialise once he's
+      // nearly in the beat. Fading linearly dragged ghost furniture across
+      // the page for the whole transition.
+      const fade = (v: number) => {
+        const t = Math.min(1, Math.max(0, (v - 0.65) / 0.35));
+        return t * t * (3 - 2 * t);
+      };
+
+      const setProps = (sit: number, deskAmount: number) => {
+        const chairOpacity = fade(sit);
+        chair.group.visible = chairOpacity > 0.02;
+        for (const m of chair.materials) m.opacity = chairOpacity;
+
+        const deskOpacity = fade(deskAmount);
+        desk.group.visible = deskOpacity > 0.02;
+        for (const m of desk.materials) m.opacity = deskOpacity;
       };
 
       poseFromScroll(target);
@@ -265,7 +278,7 @@ export function CharacterScene() {
         // Reduced motion: one static frame in the resting pose. No travel,
         // no idle, no loop.
         applyPose(skel, POSES[0]);
-        setChair(POSES[0].sit);
+        setProps(POSES[0].sit, POSES[0].desk);
         practical.position.set(
           POSES[0].rootX * halfWidth + 1,
           POSES[0].rootY * halfHeight + 1,
@@ -312,7 +325,7 @@ export function CharacterScene() {
         }
 
         applyPose(skel, current);
-        setChair(Math.min(1, Math.max(0, current.sit)));
+        setProps(current.sit, current.desk);
 
         // ---- Idle life, layered on top of the settled pose ------------------
         // Breath: the chest rises on a slow cycle.

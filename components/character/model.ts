@@ -351,6 +351,82 @@ export function buildChair(): {
   };
 }
 
+/**
+ * A desk with an open laptop, sized to pair with the chair when the character
+ * sits at it (his +Z facing). The laptop screen carries a soft amber emissive
+ * so the "working" beat casts a hint of screen light. Transparent materials so
+ * the beat can fade the whole prop with the pose's `desk` scalar.
+ */
+export function buildDesk(): {
+  group: THREE.Group;
+  materials: THREE.MeshStandardMaterial[];
+  dispose: () => void;
+} {
+  const group = new THREE.Group();
+  const geos: THREE.BufferGeometry[] = [];
+
+  const wood = new THREE.MeshStandardMaterial({
+    color: 0x2e2118,
+    roughness: 0.7,
+    metalness: 0.08,
+    flatShading: true,
+    transparent: true,
+    opacity: 0,
+  });
+  const shell = new THREE.MeshStandardMaterial({
+    color: 0x1b2029,
+    roughness: 0.45,
+    metalness: 0.35,
+    transparent: true,
+    opacity: 0,
+  });
+  const screen = new THREE.MeshStandardMaterial({
+    color: 0x10131a,
+    emissive: 0xd99a4e,
+    emissiveIntensity: 0.7,
+    roughness: 0.3,
+    metalness: 0.1,
+    transparent: true,
+    opacity: 0,
+  });
+
+  const box = (
+    w: number, h: number, dp: number,
+    x: number, y: number, z: number,
+    mat: THREE.Material,
+  ) => {
+    const g = new THREE.BoxGeometry(w, h, dp);
+    geos.push(g);
+    const mesh = new THREE.Mesh(g, mat);
+    mesh.position.set(x, y, z);
+    group.add(mesh);
+    return mesh;
+  };
+
+  // Desktop and side panels.
+  box(1.1, 0.05, 0.55, 0, 0.02, 0.66, wood);
+  box(0.05, 0.85, 0.5, -0.52, -0.4, 0.66, wood);
+  box(0.05, 0.85, 0.5, 0.52, -0.4, 0.66, wood);
+
+  // Laptop: base on the desk, screen leaning away from him.
+  box(0.36, 0.025, 0.24, 0, 0.057, 0.62, shell);
+  const lid = box(0.36, 0.28, 0.018, 0, 0.19, 0.76, shell);
+  lid.rotation.x = THREE.MathUtils.degToRad(-14);
+  const glow = box(0.32, 0.24, 0.02, 0, 0.19, 0.752, screen);
+  glow.rotation.x = lid.rotation.x;
+
+  return {
+    group,
+    materials: [wood, shell, screen],
+    dispose: () => {
+      for (const g of geos) g.dispose();
+      wood.dispose();
+      shell.dispose();
+      screen.dispose();
+    },
+  };
+}
+
 const _euler = new THREE.Euler();
 const _delta = new THREE.Quaternion();
 
