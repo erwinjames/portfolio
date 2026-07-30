@@ -351,15 +351,46 @@ export function buildChair(): {
   };
 }
 
+/** One fake-code line: indent, then colored token widths. Widths are canvas
+ *  px; colors index into CODE_COLORS. */
+type CodeLine = { indent: number; tokens: [width: number, color: number][] };
+
+const CODE_COLORS = ["#d99a4e", "#e8e2d6", "#8b877f", "#b9803f", "#7d94b8"];
+
+/** Deterministic-ish editor content, generated once per build. */
+function makeCodeLines(): CodeLine[] {
+  const lines: CodeLine[] = [];
+  const indents = [0, 0, 1, 2, 2, 1, 0, 0, 1, 1, 2, 0];
+  for (const indent of indents) {
+    const count = 2 + Math.floor(Math.random() * 3);
+    const tokens: [number, number][] = [];
+    for (let t = 0; t < count; t++) {
+      tokens.push([
+        10 + Math.floor(Math.random() * 30),
+        Math.floor(Math.random() * CODE_COLORS.length),
+      ]);
+    }
+    lines.push({ indent, tokens });
+  }
+  return lines;
+}
+
 /**
- * A desk with an open laptop, sized to pair with the chair when the character
- * sits at it (his +Z facing). The laptop screen carries a soft amber emissive
- * so the "working" beat casts a hint of screen light. Transparent materials so
- * the beat can fade the whole prop with the pose's `desk` scalar.
+ * A desk with an open MACBOOK, staged for the "coding" beat: slim aluminum
+ * body, dark bezel, glowing logo on the lid, and a live editor on the screen —
+ * traffic-light dots, syntax-colored lines that type themselves out, and a
+ * blinking cursor. The editor is a CanvasTexture redrawn a few times a second
+ * from `updateScreen(elapsed)`.
+ *
+ * Transparent materials throughout so the beat can fade the whole prop with
+ * the pose's `desk` scalar; the screen light must be faded alongside (it's a
+ * light, not a material — see `screenLight`).
  */
 export function buildDesk(): {
   group: THREE.Group;
-  materials: THREE.MeshStandardMaterial[];
+  materials: THREE.Material[];
+  screenLight: THREE.PointLight;
+  updateScreen: (elapsed: number) => void;
   dispose: () => void;
 } {
   const group = new THREE.Group();
@@ -373,56 +404,182 @@ export function buildDesk(): {
     transparent: true,
     opacity: 0,
   });
-  const shell = new THREE.MeshStandardMaterial({
-    color: 0x1b2029,
-    roughness: 0.45,
-    metalness: 0.35,
+  const aluminum = new THREE.MeshStandardMaterial({
+    color: 0xb4b9c2,
+    roughness: 0.38,
+    metalness: 0.7,
     transparent: true,
     opacity: 0,
   });
-  const screen = new THREE.MeshStandardMaterial({
-    color: 0x10131a,
-    emissive: 0xd99a4e,
-    emissiveIntensity: 0.7,
-    roughness: 0.3,
-    metalness: 0.1,
+  const keyDeck = new THREE.MeshStandardMaterial({
+    color: 0x23262d,
+    roughness: 0.8,
+    metalness: 0.2,
     transparent: true,
     opacity: 0,
+  });
+
+  // ---- The editor canvas --------------------------------------------------
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 176;
+  const ctx = canvas.getContext("2d");
+
+  const codeTex = new THREE.CanvasTexture(canvas);
+  codeTex.colorSpace = THREE.SRGBColorSpace;
+
+  const codeLines = makeCodeLines();
+  const totalUnits = codeLines.reduce((n, l) => n + l.tokens.length, 0);
+  const TYPE_SPEED = 3.2; // tokens per second
+  let lastDrawStep = -1;
+
+  const drawEditor = (elapsed: number) => {
+    if (!ctx) return;
+    const w = canvas.width;
+    const h = canvas.height;
+
+    // Window chrome.
+    ctx.fillStyle = "#0c0f14";
+    ctx.fillRect(0, 0, w, h);
+    ctx.fillStyle = "#161a21";
+    ctx.fillRect(0, 0, w, 20);
+    for (const [i, c] of ["#ff5f57", "#febc2e", "#28c840"].entries()) {
+      ctx.fillStyle = c;
+      ctx.beginPath();
+      ctx.arc(12 + i * 14, 10, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Typed tokens up to the current progress, looping with a hold at the end.
+    const cycle = totalUnits + 8; // ~2.5s pause before it clears
+    const progress = (elapsed * TYPE_SPEED) % cycle;
+
+    let unit = 0;
+    let cursorX = 30;
+    let cursorY = 34;
+    ctx.font = "9px monospace";
+
+    for (let li = 0; li < codeLines.length; li++) {
+      const line = codeLines[li];
+      const y = 32 + li * 12;
+      if (y > h - 10) break;
+
+      ctx.fillStyle = "#3a3f48";
+      ctx.fillText(String(li + 1).padStart(2, " "), 6, y + 7);
+
+      let x = 30 + line.indent * 14;
+      for (const [width, color] of line.tokens) {
+        if (unit >= progress) break;
+        // Partial reveal of the token currently being "typed".
+        const frac = Math.min(1, progress - unit);
+        ctx.fillStyle = CODE_COLORS[color];
+        ctx.globalAlpha = 0.92;
+        ctx.fillRect(x, y, width * frac, 7);
+        ctx.globalAlpha = 1;
+        x += width * frac + 6;
+        cursorX = x - 4;
+        cursorY = y;
+        unit++;
+      }
+      if (unit >= progress) break;
+    }
+
+    // Blinking cursor.
+    if (elapsed % 1 < 0.55) {
+      ctx.fillStyle = "#ece8e1";
+      ctx.fillRect(cursorX, cursorY, 4, 8);
+    }
+
+    codeTex.needsUpdate = true;
+  };
+
+  // A visible mid-typing frame from the start, so reduced-motion (which never
+  // animates) still shows a working editor rather than an empty window.
+  drawEditor(totalUnits / TYPE_SPEED / 2);
+
+  const screenMat = new THREE.MeshBasicMaterial({
+    map: codeTex,
+    transparent: true,
+    opacity: 0,
+    toneMapped: false, // keep the editor crisp, not tone-mapped to mud
   });
 
   const box = (
     w: number, h: number, dp: number,
     x: number, y: number, z: number,
     mat: THREE.Material,
+    parent: THREE.Object3D = group,
   ) => {
     const g = new THREE.BoxGeometry(w, h, dp);
     geos.push(g);
     const mesh = new THREE.Mesh(g, mat);
     mesh.position.set(x, y, z);
-    group.add(mesh);
+    parent.add(mesh);
     return mesh;
   };
 
-  // Desktop and side panels.
+  // Desk: top and side panels.
   box(1.1, 0.05, 0.55, 0, 0.02, 0.66, wood);
   box(0.05, 0.85, 0.5, -0.52, -0.4, 0.66, wood);
   box(0.05, 0.85, 0.5, 0.52, -0.4, 0.66, wood);
 
-  // Laptop: base on the desk, screen leaning away from him.
-  box(0.36, 0.025, 0.24, 0, 0.057, 0.62, shell);
-  const lid = box(0.36, 0.28, 0.018, 0, 0.19, 0.76, shell);
-  lid.rotation.x = THREE.MathUtils.degToRad(-14);
-  const glow = box(0.32, 0.24, 0.02, 0, 0.19, 0.752, screen);
-  glow.rotation.x = lid.rotation.x;
+  // MacBook base: thin aluminum slab with a darker key deck inset.
+  box(0.38, 0.016, 0.25, 0, 0.053, 0.62, aluminum);
+  box(0.3, 0.006, 0.14, 0, 0.062, 0.6, keyDeck);
+
+  // Lid, hinged at the base's far edge, leaning back toward the viewer.
+  const lidGroup = new THREE.Group();
+  lidGroup.position.set(0, 0.055, 0.74);
+  lidGroup.rotation.x = THREE.MathUtils.degToRad(-14);
+  group.add(lidGroup);
+
+  box(0.38, 0.27, 0.012, 0, 0.135, 0, aluminum, lidGroup);
+
+  // The editor, on the inner face (toward him / the keyboard).
+  const screenGeo = new THREE.PlaneGeometry(0.34, 0.225);
+  geos.push(screenGeo);
+  const screenMesh = new THREE.Mesh(screenGeo, screenMat);
+  screenMesh.position.set(0, 0.135, -0.008);
+  screenMesh.rotation.y = Math.PI;
+  lidGroup.add(screenMesh);
+
+  // Glowing logo on the lid's back.
+  const logoMat = new THREE.MeshBasicMaterial({
+    color: 0xd99a4e,
+    transparent: true,
+    opacity: 0,
+    toneMapped: false,
+  });
+  const logoGeo = new THREE.CircleGeometry(0.022, 16);
+  geos.push(logoGeo);
+  const logo = new THREE.Mesh(logoGeo, logoMat);
+  logo.position.set(0, 0.15, 0.008);
+  lidGroup.add(logo);
+
+  // Cool screen light spilling onto his face and hands.
+  const screenLight = new THREE.PointLight(0xcfe0ea, 0, 2.6, 2);
+  screenLight.position.set(0, 0.25, 0.45);
+  group.add(screenLight);
 
   return {
     group,
-    materials: [wood, shell, screen],
+    materials: [wood, aluminum, keyDeck, screenMat, logoMat],
+    screenLight,
+    updateScreen: (elapsed: number) => {
+      // ~8 redraws a second is plenty for a typing effect.
+      const step = Math.floor(elapsed * 8);
+      if (step === lastDrawStep) return;
+      lastDrawStep = step;
+      drawEditor(elapsed);
+    },
     dispose: () => {
       for (const g of geos) g.dispose();
+      codeTex.dispose();
       wood.dispose();
-      shell.dispose();
-      screen.dispose();
+      aluminum.dispose();
+      keyDeck.dispose();
+      screenMat.dispose();
+      logoMat.dispose();
     },
   };
 }

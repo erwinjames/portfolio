@@ -217,6 +217,7 @@ export function CharacterScene() {
 
     let beat = 0;
     let travel = 1; // 0..1 flight progress; 1 = arrived
+    let bootstrapped = false;
     const fromSnap = clonePose(POSES[0]);
     let fromOff = 0;
 
@@ -250,7 +251,13 @@ export function CharacterScene() {
       else if (beat === i + 1) desired = u < 1 - COMMIT ? i : i + 1;
       else desired = u > 0.5 ? i + 1 : i; // jumped several sections at once
 
-      if (desired !== beat) {
+      if (!bootstrapped) {
+        // First sample: appear at the right beat instead of gliding in from
+        // the hero — a reload mid-page starts him already in place.
+        bootstrapped = true;
+        beat = desired;
+        travel = 1;
+      } else if (desired !== beat) {
         // Depart from exactly what's on screen: snapshot the spring-rendered
         // pose and his current ride offset, then glide toward the new anchor.
         for (const k of POSE_KEYS) fromSnap[k] = current[k];
@@ -359,6 +366,9 @@ export function CharacterScene() {
         const deskOpacity = fade(deskAmount);
         desk.group.visible = deskOpacity > 0.02;
         for (const m of desk.materials) m.opacity = deskOpacity;
+        // The MacBook screen light is a light, not a material — fade it too,
+        // or a ghost glow lingers on him after the desk is gone.
+        desk.screenLight.intensity = deskOpacity * 4.5;
       };
 
       poseFromScroll(target, 1);
@@ -433,6 +443,7 @@ export function CharacterScene() {
 
         applyPose(skel, current);
         setProps(current.sit, current.desk);
+        desk.updateScreen(elapsed);
 
         // ---- Idle life, layered on top of the settled pose ------------------
         // Breath: the chest rises on a slow cycle.

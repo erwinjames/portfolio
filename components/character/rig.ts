@@ -94,11 +94,10 @@ export const POSES: Pose[] = [
     legR: [-0.14, -0.18, 0.95], shinR: [-0.06, -0.95, 0.12],
   },
   // 2 — Work: the "at the desk" beat, in the empty lower-left column under
-  //     the sticky year. Seated on the chair, laptop open on the desk,
-  //     leaning in and typing. Dwell keeps him planted here for the whole
-  //     Experience section.
+  //     the sticky year. Staged over-the-shoulder — his back is angled to the
+  //     camera so the MacBook's coding screen faces the viewer.
   {
-    rootX: -0.60, rootY: -0.46, rootZ: -1.0, rootRotX: 0, rootRotY: d(-58), rootRotZ: 0, scale: 0.95,
+    rootX: -0.60, rootY: -0.46, rootZ: -1.0, rootRotX: 0, rootRotY: d(148), rootRotZ: 0, scale: 0.95,
     torsoRotX: d(10), torsoRotY: 0, headRotX: d(12), headRotY: 0, sit: 1, desk: 1,
     armL: [0.24, -0.70, 0.45], foreL: [0.10, -0.25, 0.95],
     armR: [-0.24, -0.70, 0.45], foreR: [-0.10, -0.25, 0.95],
