@@ -171,6 +171,10 @@ export function CharacterScene() {
     const HOLD_IN = 0.34;
     const HOLD_OUT = 0.66;
 
+    /** How mid-travel the last sampled pose was: 0 parked at a beat, 1 at the
+     *  midpoint of a dash. Feeds the presence fade below. */
+    let dashActivity = 0;
+
     const poseFromScroll = (out: Pose) => {
       const maxScroll =
         document.documentElement.scrollHeight - window.innerHeight;
@@ -183,6 +187,7 @@ export function CharacterScene() {
       const span = stops[i + 1] - stops[i];
       const u = span > 0 ? (clamped - stops[i]) / span : 0;
       const dash = Math.min(1, Math.max(0, (u - HOLD_IN) / (HOLD_OUT - HOLD_IN)));
+      dashActivity = 4 * dash * (1 - dash);
 
       return lerpPose(POSES[i], POSES[i + 1], smoothstep(dash), out);
     };
@@ -292,6 +297,18 @@ export function CharacterScene() {
       // page doesn't lurch when you come back to it.
       const timer = new THREE.Timer();
 
+      // ---- Presence fade ----------------------------------------------------
+      // He's a solid, warm-lit figure on a fixed canvas: whenever the page
+      // moves past him (scrolling) or he's moving across the page (dashing),
+      // he sits on top of details he shouldn't. While either is happening he
+      // recedes to a faint ghost; once everything settles he returns to full
+      // presence in his empty lane. Faded on the canvas element, not the
+      // materials — free, and immune to transparency-sorting artifacts.
+      let lastScrollY = window.scrollY;
+      let scrollVel = 0; // smoothed, in viewport-heights per second
+      let presence = 1;
+      const GHOST = 0.22;
+
       const tick = () => {
         raf = requestAnimationFrame(tick);
         if (!skel) return;
@@ -300,7 +317,18 @@ export function CharacterScene() {
         const dt = Math.min(timer.getDelta(), 0.05);
         const elapsed = timer.getElapsed();
 
+        const rawVel =
+          Math.abs(window.scrollY - lastScrollY) / (dt * window.innerHeight);
+        lastScrollY = window.scrollY;
+        scrollVel += (rawVel - scrollVel) * (1 - Math.exp(-7 * dt));
+
         poseFromScroll(target);
+
+        const velFade = Math.min(1, Math.max(0, (scrollVel - 0.08) / 0.5));
+        const veil = Math.max(velFade, dashActivity);
+        const presenceTarget = 1 - (1 - GHOST) * veil;
+        presence += (presenceTarget - presence) * (1 - Math.exp(-6 * dt));
+        renderer.domElement.style.opacity = presence.toFixed(3);
 
         // Scalars ride a spring — position, scale and turn overshoot a hair and
         // settle, which is what makes the travel feel like weight rather than
