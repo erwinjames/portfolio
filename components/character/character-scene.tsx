@@ -111,6 +111,17 @@ export function CharacterScene() {
     let scaleMultiplier = 1;
     let stops: number[] = [];
 
+    /** The poses actually driven this session. Desktop uses POSES verbatim;
+     *  phones swap the mid-page beats to gap anchors (see measure). */
+    let livePoses: Pose[] = POSES.map(clonePose);
+
+    /** Beats that, on phones, anchor to the empty padding gap BELOW their
+     *  section instead of the section itself: About, Work, Projects. The
+     *  stacked single-column layout leaves no side lanes, so the only place
+     *  he can stand without covering words is between the sections. */
+    const GAP_BEATS = new Set([1, 2, 3]);
+    const isPhone = () => window.innerWidth < 768;
+
     const measure = () => {
       const maxScroll =
         document.documentElement.scrollHeight - window.innerHeight;
@@ -120,10 +131,21 @@ export function CharacterScene() {
         return;
       }
 
-      const raw = SECTION_IDS.map((id, i) => {
-        const el = document.getElementById(id);
-        if (!el) return i / (SECTION_IDS.length - 1);
-        const rect = el.getBoundingClientRect();
+      const rects = SECTION_IDS.map((id) =>
+        document.getElementById(id)?.getBoundingClientRect(),
+      );
+
+      const raw = rects.map((rect, i) => {
+        if (!rect) return i / (SECTION_IDS.length - 1);
+
+        // Phones: anchor the gap beats to the midpoint between this section's
+        // bottom and the next section's top — pure empty padding.
+        if (isPhone() && GAP_BEATS.has(i) && rects[i + 1]) {
+          const gap =
+            window.scrollY + (rect.bottom + (rects[i + 1] as DOMRect).top) / 2;
+          return (gap - window.innerHeight / 2) / maxScroll;
+        }
+
         const center = window.scrollY + rect.top + rect.height / 2;
         return (center - window.innerHeight / 2) / maxScroll;
       });
@@ -134,6 +156,23 @@ export function CharacterScene() {
         raw[i] = Math.min(1, Math.max(raw[i], raw[i - 1] + 0.001));
       }
       stops = raw;
+    };
+
+    const rebuildPoses = () => {
+      livePoses = POSES.map(clonePose);
+      if (!isPhone()) return;
+
+      // Gap beats sit near the centre of their gap, offset side to side so
+      // consecutive vignettes don't feel stamped. Projects goes LEFT because
+      // his pointing arm extends right and would clip the screen edge.
+      const gapX: Record<number, number> = { 1: 0.22, 2: -0.22, 3: -0.3 };
+      for (const i of GAP_BEATS) {
+        livePoses[i].rootX = gapX[i] ?? 0;
+        livePoses[i].rootY = 0;
+      }
+      // Hero: drop him below the tagline into the open bottom half.
+      livePoses[0].rootX = 0.6;
+      livePoses[0].rootY = -0.52;
     };
 
     const resize = () => {
@@ -154,6 +193,7 @@ export function CharacterScene() {
       // element rather than sitting on the words.
       scaleMultiplier = w < 768 ? 0.46 : w < 1100 ? 0.58 : 1;
 
+      rebuildPoses();
       measure();
     };
 
@@ -202,13 +242,14 @@ export function CharacterScene() {
       const eased = smoothstep(dash);
 
       const offA =
-        (window.scrollY - stops[i] * maxScroll) * worldPerPx(POSES[i].rootZ);
+        (window.scrollY - stops[i] * maxScroll) *
+        worldPerPx(livePoses[i].rootZ);
       const offB =
         (window.scrollY - stops[i + 1] * maxScroll) *
-        worldPerPx(POSES[i + 1].rootZ);
+        worldPerPx(livePoses[i + 1].rootZ);
       docOffsetY = offA + (offB - offA) * eased;
 
-      return lerpPose(POSES[i], POSES[i + 1], eased, out);
+      return lerpPose(livePoses[i], livePoses[i + 1], eased, out);
     };
 
     const charQuat = new THREE.Quaternion();
@@ -302,11 +343,11 @@ export function CharacterScene() {
       if (reduced) {
         // Reduced motion: one static frame in the resting pose. No travel,
         // no idle, no loop.
-        applyPose(skel, POSES[0]);
-        setProps(POSES[0].sit, POSES[0].desk);
+        applyPose(skel, livePoses[0]);
+        setProps(livePoses[0].sit, livePoses[0].desk);
         practical.position.set(
-          POSES[0].rootX * halfWidth + 1,
-          POSES[0].rootY * halfHeight + 1,
+          livePoses[0].rootX * halfWidth + 1,
+          livePoses[0].rootY * halfHeight + 1,
           2,
         );
         renderer.render(scene, camera);
@@ -402,7 +443,7 @@ export function CharacterScene() {
     const onResize = () => {
       resize();
       if (skel && reduced) {
-        applyPose(skel, POSES[0]);
+        applyPose(skel, livePoses[0]);
         renderer.render(scene, camera);
       }
     };
