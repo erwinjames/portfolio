@@ -175,6 +175,16 @@ export function CharacterScene() {
      *  midpoint of a dash. Feeds the presence fade below. */
     let dashActivity = 0;
 
+    /** Extra world-Y so he rides WITH the page instead of hanging fixed in
+     *  the viewport. Anchored to the active section's stop: as you scroll past
+     *  it he moves up exactly like the content beside him. Blended between the
+     *  two anchors during a dash. */
+    let docOffsetY = 0;
+
+    /** World units per scrolled pixel at a given character depth. */
+    const worldPerPx = (z: number) =>
+      (2 * halfHeight * ((CAMERA_Z - z) / CAMERA_Z)) / window.innerHeight;
+
     const poseFromScroll = (out: Pose) => {
       const maxScroll =
         document.documentElement.scrollHeight - window.innerHeight;
@@ -189,17 +199,27 @@ export function CharacterScene() {
       const dash = Math.min(1, Math.max(0, (u - HOLD_IN) / (HOLD_OUT - HOLD_IN)));
       dashActivity = 4 * dash * (1 - dash);
 
-      return lerpPose(POSES[i], POSES[i + 1], smoothstep(dash), out);
+      const eased = smoothstep(dash);
+
+      const offA =
+        (window.scrollY - stops[i] * maxScroll) * worldPerPx(POSES[i].rootZ);
+      const offB =
+        (window.scrollY - stops[i + 1] * maxScroll) *
+        worldPerPx(POSES[i + 1].rootZ);
+      docOffsetY = offA + (offB - offA) * eased;
+
+      return lerpPose(POSES[i], POSES[i + 1], eased, out);
     };
 
     const charQuat = new THREE.Quaternion();
     const dir = new THREE.Vector3();
 
-    /** Writes a pose onto the skinned rig. */
+    /** Writes a pose onto the skinned rig. `docOffsetY` rides him with the
+     *  page; applied raw (not springed) so he tracks the content 1:1. */
     const applyPose = (skel: Skeleton, pose: Pose) => {
       skel.root.position.set(
         pose.rootX * halfWidth,
-        pose.rootY * halfHeight,
+        pose.rootY * halfHeight + docOffsetY,
         pose.rootZ,
       );
       skel.root.rotation.set(pose.rootRotX, pose.rootRotY, pose.rootRotZ);
