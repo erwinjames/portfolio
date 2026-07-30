@@ -90,8 +90,8 @@ export const POSES: Pose[] = [
   {
     rootX: 0.84, rootY: 0.42, rootZ: -1.2, rootRotX: 0, rootRotY: d(26), rootRotZ: 0, scale: 0.95,
     torsoRotX: d(8), torsoRotY: d(-4), headRotX: d(20), headRotY: d(-8), sit: 1, desk: 0, lap: 1,
-    armL: [0.24, -0.68, 0.5], foreL: [0.08, -0.42, 0.82],
-    armR: [-0.24, -0.68, 0.5], foreR: [-0.08, -0.42, 0.82],
+    armL: [0.14, -0.82, 0.4], foreL: [-0.18, -0.32, 0.85],
+    armR: [-0.14, -0.82, 0.4], foreR: [0.18, -0.32, 0.85],
     legL: [0.14, -0.18, 0.95], shinL: [0.06, -0.95, 0.12],
     legR: [-0.14, -0.18, 0.95], shinR: [-0.06, -0.95, 0.12],
   },
@@ -101,8 +101,8 @@ export const POSES: Pose[] = [
   {
     rootX: -0.60, rootY: -0.46, rootZ: -1.0, rootRotX: 0, rootRotY: d(148), rootRotZ: 0, scale: 0.95,
     torsoRotX: d(10), torsoRotY: 0, headRotX: d(12), headRotY: 0, sit: 1, desk: 1, lap: 0,
-    armL: [0.24, -0.70, 0.45], foreL: [0.10, -0.25, 0.95],
-    armR: [-0.24, -0.70, 0.45], foreR: [-0.10, -0.25, 0.95],
+    armL: [0.20, -0.72, 0.45], foreL: [-0.08, -0.28, 0.92],
+    armR: [-0.20, -0.72, 0.45], foreR: [0.08, -0.28, 0.92],
     legL: [0.14, -0.18, 0.95], shinL: [0.06, -0.95, 0.12],
     legR: [-0.14, -0.18, 0.95], shinR: [-0.06, -0.95, 0.12],
   },

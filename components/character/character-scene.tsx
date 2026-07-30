@@ -463,6 +463,21 @@ export function CharacterScene() {
         const breath = Math.sin(elapsed * 1.15);
         skel.bones.chest?.scale.setScalar(1 + breath * 0.012);
 
+        // Typing: while a laptop beat is active, the forearms tap in small
+        // alternating strokes — left and right hands out of phase, like real
+        // two-handed typing — with an occasional micro-pause so it doesn't
+        // read as a metronome. Applied after aiming, as a local nudge on the
+        // elbow bones.
+        const typing = Math.max(current.lap, current.desk);
+        if (typing > 0.3) {
+          const burst = 0.6 + 0.4 * Math.sin(elapsed * 0.7); // ebb and flow
+          const amp = 0.055 * typing * burst;
+          skel.bones.elbowL?.rotateX(Math.sin(elapsed * 9.2) * amp);
+          skel.bones.elbowR?.rotateX(Math.sin(elapsed * 9.2 + Math.PI) * amp);
+          // The head gives tiny reading nods while he works.
+          skel.bones.head?.rotateX(Math.sin(elapsed * 2.3) * 0.02 * typing);
+        }
+
         // Weight shift: he sways gently from hip to hip, and floats.
         skel.root.position.y += Math.sin(elapsed * 0.75) * 0.045;
         skel.root.position.x += Math.sin(elapsed * 0.4) * 0.012;
