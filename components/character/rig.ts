@@ -30,6 +30,8 @@ export type Pose = {
   sit: number;
   /** 0..1 — fades in the desk + laptop prop for the "working" beats. */
   desk: number;
+  /** 0..1 — fades in the lap MacBook for the seated-casual beat. */
+  lap: number;
 
   /** Where each limb segment points. Upper arm, then forearm; thigh, then shin. */
   armL: Dir;
@@ -45,7 +47,7 @@ export type Pose = {
 /** The plain numeric fields — interpolated component-wise. */
 export const POSE_KEYS = [
   "rootX", "rootY", "rootZ", "rootRotX", "rootRotY", "rootRotZ", "scale",
-  "torsoRotX", "torsoRotY", "headRotX", "headRotY", "sit", "desk",
+  "torsoRotX", "torsoRotY", "headRotX", "headRotY", "sit", "desk", "lap",
 ] as const satisfies readonly (keyof Pose)[];
 
 /** The direction fields — interpolated as vectors, then re-normalized on use. */
@@ -76,20 +78,20 @@ export const POSES: Pose[] = [
   // 0 — Hero: standing tall, far right so it clears the wordmark.
   {
     rootX: 0.66, rootY: -0.22, rootZ: 0, rootRotX: 0, rootRotY: d(-14), rootRotZ: 0, scale: 1.32,
-    torsoRotX: 0, torsoRotY: 0, headRotX: d(-4), headRotY: d(6), sit: 0, desk: 0,
+    torsoRotX: 0, torsoRotY: 0, headRotX: d(-4), headRotY: d(6), sit: 0, desk: 0, lap: 0,
     armL: [0.30, -0.95, 0.06], foreL: [0.20, -0.96, 0.20],
     armR: [-0.30, -0.95, 0.06], foreR: [-0.20, -0.96, 0.20],
     ...STAND,
   },
-  // 1 — About: the "sit and chat" beat. He takes a chair in the empty
-  //     upper-right, level with the ABOUT label, hands on his knees, head
-  //     turned down-left toward his own bio. The chair prop fades in with
-  //     `sit`.
+  // 1 — About: the "casual coding" beat. He takes a chair in the empty
+  //     upper-right, MacBook open on his lap, leaning in and typing, head
+  //     down at the screen. The chair fades with `sit`, the laptop with
+  //     `lap`; the glowing lid logo faces the viewer.
   {
     rootX: 0.84, rootY: 0.42, rootZ: -1.2, rootRotX: 0, rootRotY: d(26), rootRotZ: 0, scale: 0.95,
-    torsoRotX: d(2), torsoRotY: d(-6), headRotX: d(10), headRotY: d(-26), sit: 1, desk: 0,
-    armL: [0.28, -0.75, 0.45], foreL: [0.12, -0.30, 0.92],
-    armR: [-0.28, -0.75, 0.45], foreR: [-0.12, -0.30, 0.92],
+    torsoRotX: d(8), torsoRotY: d(-4), headRotX: d(20), headRotY: d(-8), sit: 1, desk: 0, lap: 1,
+    armL: [0.24, -0.68, 0.5], foreL: [0.08, -0.42, 0.82],
+    armR: [-0.24, -0.68, 0.5], foreR: [-0.08, -0.42, 0.82],
     legL: [0.14, -0.18, 0.95], shinL: [0.06, -0.95, 0.12],
     legR: [-0.14, -0.18, 0.95], shinR: [-0.06, -0.95, 0.12],
   },
@@ -98,7 +100,7 @@ export const POSES: Pose[] = [
   //     camera so the MacBook's coding screen faces the viewer.
   {
     rootX: -0.60, rootY: -0.46, rootZ: -1.0, rootRotX: 0, rootRotY: d(148), rootRotZ: 0, scale: 0.95,
-    torsoRotX: d(10), torsoRotY: 0, headRotX: d(12), headRotY: 0, sit: 1, desk: 1,
+    torsoRotX: d(10), torsoRotY: 0, headRotX: d(12), headRotY: 0, sit: 1, desk: 1, lap: 0,
     armL: [0.24, -0.70, 0.45], foreL: [0.10, -0.25, 0.95],
     armR: [-0.24, -0.70, 0.45], foreR: [-0.10, -0.25, 0.95],
     legL: [0.14, -0.18, 0.95], shinL: [0.06, -0.95, 0.12],
@@ -109,7 +111,7 @@ export const POSES: Pose[] = [
   //     right, head following the gesture.
   {
     rootX: -0.62, rootY: -0.42, rootZ: -1.0, rootRotX: 0, rootRotY: d(-20), rootRotZ: 0, scale: 0.95,
-    torsoRotX: d(-4), torsoRotY: d(8), headRotX: d(-4), headRotY: d(18), sit: 0, desk: 0,
+    torsoRotX: d(-4), torsoRotY: d(8), headRotX: d(-4), headRotY: d(18), sit: 0, desk: 0, lap: 0,
     armL: [0.88, 0.28, 0.24], foreL: [0.94, 0.32, 0.10],
     armR: [-0.28, -0.94, 0.10], foreR: [-0.18, -0.95, 0.22],
     ...STAND,
@@ -120,7 +122,7 @@ export const POSES: Pose[] = [
   //     education line.
   {
     rootX: 1.0, rootY: -0.52, rootZ: -2.0, rootRotX: 0, rootRotY: d(-14), rootRotZ: 0, scale: 0.80,
-    torsoRotX: d(-6), torsoRotY: 0, headRotX: d(-8), headRotY: d(14), sit: 0, desk: 0,
+    torsoRotX: d(-6), torsoRotY: 0, headRotX: d(-8), headRotY: d(14), sit: 0, desk: 0, lap: 0,
     armL: [0.38, -0.82, 0.42], foreL: [-0.82, -0.16, 0.55],
     armR: [-0.38, -0.82, 0.42], foreR: [0.82, -0.16, 0.55],
     ...STAND,
@@ -128,7 +130,7 @@ export const POSES: Pose[] = [
   // 5 — Contact: settles into the open right side, his left arm up mid-wave.
   {
     rootX: 0.68, rootY: -0.24, rootZ: -0.4, rootRotX: 0, rootRotY: d(-18), rootRotZ: 0, scale: 1.28,
-    torsoRotX: d(-2), torsoRotY: d(6), headRotX: d(-6), headRotY: d(16), sit: 0, desk: 0,
+    torsoRotX: d(-2), torsoRotY: d(6), headRotX: d(-6), headRotY: d(16), sit: 0, desk: 0, lap: 0,
     armL: [0.66, 0.68, 0.30], foreL: [0.44, 0.88, 0.16],
     armR: [-0.28, -0.95, 0.08], foreR: [-0.18, -0.96, 0.20],
     ...STAND,

@@ -375,35 +375,31 @@ function makeCodeLines(): CodeLine[] {
   return lines;
 }
 
-/**
- * A desk with an open MACBOOK, staged for the "coding" beat: slim aluminum
- * body, dark bezel, glowing logo on the lid, and a live editor on the screen —
- * traffic-light dots, syntax-colored lines that type themselves out, and a
- * blinking cursor. The editor is a CanvasTexture redrawn a few times a second
- * from `updateScreen(elapsed)`.
- *
- * Transparent materials throughout so the beat can fade the whole prop with
- * the pose's `desk` scalar; the screen light must be faded alongside (it's a
- * light, not a material — see `screenLight`).
- */
-export function buildDesk(): {
+export type MacBook = {
   group: THREE.Group;
   materials: THREE.Material[];
   screenLight: THREE.PointLight;
   updateScreen: (elapsed: number) => void;
   dispose: () => void;
-} {
+};
+
+/**
+ * An open MACBOOK at its own origin (centre of the base slab): slim aluminum
+ * body, dark key deck, glowing logo on the lid, and a live editor on the
+ * screen — traffic-light dots, syntax-colored lines that type themselves out,
+ * and a blinking cursor. The editor is a CanvasTexture redrawn a few times a
+ * second from `updateScreen(elapsed)`. The user sits on the -Z side.
+ *
+ * Built twice: on the Work desk, and on his lap for the About beat. Each
+ * instance has its own canvas so the loops can run out of phase.
+ *
+ * Transparent materials throughout so beats can fade the prop; the screen
+ * light must be faded alongside (it's a light, not a material).
+ */
+export function buildMacBook(): MacBook {
   const group = new THREE.Group();
   const geos: THREE.BufferGeometry[] = [];
 
-  const wood = new THREE.MeshStandardMaterial({
-    color: 0x2e2118,
-    roughness: 0.7,
-    metalness: 0.08,
-    flatShading: true,
-    transparent: true,
-    opacity: 0,
-  });
   const aluminum = new THREE.MeshStandardMaterial({
     color: 0xb4b9c2,
     roughness: 0.38,
@@ -518,24 +514,19 @@ export function buildDesk(): {
     return mesh;
   };
 
-  // Desk: top and side panels.
-  box(1.1, 0.05, 0.55, 0, 0.02, 0.66, wood);
-  box(0.05, 0.85, 0.5, -0.52, -0.4, 0.66, wood);
-  box(0.05, 0.85, 0.5, 0.52, -0.4, 0.66, wood);
+  // Base: thin aluminum slab with a darker key deck inset.
+  box(0.38, 0.016, 0.25, 0, 0.008, 0, aluminum);
+  box(0.3, 0.006, 0.14, 0, 0.017, -0.02, keyDeck);
 
-  // MacBook base: thin aluminum slab with a darker key deck inset.
-  box(0.38, 0.016, 0.25, 0, 0.053, 0.62, aluminum);
-  box(0.3, 0.006, 0.14, 0, 0.062, 0.6, keyDeck);
-
-  // Lid, hinged at the base's far edge, leaning back toward the viewer.
+  // Lid, hinged at the base's far edge, leaning back away from the user.
   const lidGroup = new THREE.Group();
-  lidGroup.position.set(0, 0.055, 0.74);
+  lidGroup.position.set(0, 0.01, 0.12);
   lidGroup.rotation.x = THREE.MathUtils.degToRad(-14);
   group.add(lidGroup);
 
   box(0.38, 0.27, 0.012, 0, 0.135, 0, aluminum, lidGroup);
 
-  // The editor, on the inner face (toward him / the keyboard).
+  // The editor, on the inner face (toward the user / the keyboard).
   const screenGeo = new THREE.PlaneGeometry(0.34, 0.225);
   geos.push(screenGeo);
   const screenMesh = new THREE.Mesh(screenGeo, screenMat);
@@ -556,14 +547,14 @@ export function buildDesk(): {
   logo.position.set(0, 0.15, 0.008);
   lidGroup.add(logo);
 
-  // Cool screen light spilling onto his face and hands.
+  // Cool screen light spilling onto the user's face and hands.
   const screenLight = new THREE.PointLight(0xcfe0ea, 0, 2.6, 2);
-  screenLight.position.set(0, 0.25, 0.45);
+  screenLight.position.set(0, 0.2, -0.17);
   group.add(screenLight);
 
   return {
     group,
-    materials: [wood, aluminum, keyDeck, screenMat, logoMat],
+    materials: [aluminum, keyDeck, screenMat, logoMat],
     screenLight,
     updateScreen: (elapsed: number) => {
       // ~8 redraws a second is plenty for a typing effect.
@@ -575,11 +566,57 @@ export function buildDesk(): {
     dispose: () => {
       for (const g of geos) g.dispose();
       codeTex.dispose();
-      wood.dispose();
       aluminum.dispose();
       keyDeck.dispose();
       screenMat.dispose();
       logoMat.dispose();
+    },
+  };
+}
+
+/** The Work-beat desk, with a MacBook composed on top of it. */
+export function buildDesk(): MacBook {
+  const group = new THREE.Group();
+  const geos: THREE.BufferGeometry[] = [];
+
+  const wood = new THREE.MeshStandardMaterial({
+    color: 0x2e2118,
+    roughness: 0.7,
+    metalness: 0.08,
+    flatShading: true,
+    transparent: true,
+    opacity: 0,
+  });
+
+  const box = (
+    w: number, h: number, dp: number,
+    x: number, y: number, z: number,
+  ) => {
+    const g = new THREE.BoxGeometry(w, h, dp);
+    geos.push(g);
+    const mesh = new THREE.Mesh(g, wood);
+    mesh.position.set(x, y, z);
+    group.add(mesh);
+  };
+
+  // Desk: top and side panels.
+  box(1.1, 0.05, 0.55, 0, 0.02, 0.66);
+  box(0.05, 0.85, 0.5, -0.52, -0.4, 0.66);
+  box(0.05, 0.85, 0.5, 0.52, -0.4, 0.66);
+
+  const mac = buildMacBook();
+  mac.group.position.set(0, 0.045, 0.62);
+  group.add(mac.group);
+
+  return {
+    group,
+    materials: [wood, ...mac.materials],
+    screenLight: mac.screenLight,
+    updateScreen: mac.updateScreen,
+    dispose: () => {
+      for (const g of geos) g.dispose();
+      wood.dispose();
+      mac.dispose();
     },
   };
 }

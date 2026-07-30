@@ -8,6 +8,7 @@ import {
   aimBone,
   buildChair,
   buildDesk,
+  buildMacBook,
   prepareModel,
   setBone,
   type Skeleton,
@@ -350,6 +351,12 @@ export function CharacterScene() {
       desk.group.position.set(0, 0.02, 0);
       skel.root.add(desk.group);
 
+      // The About beat's MacBook, open on his lap while he sits.
+      const lap = buildMacBook();
+      lap.group.position.set(0, -0.02, 0.3);
+      lap.group.rotation.x = THREE.MathUtils.degToRad(4);
+      skel.root.add(lap.group);
+
       // Remapped to the tail of the blend: props only materialise once he's
       // nearly in the beat. Fading linearly dragged ghost furniture across
       // the page for the whole transition.
@@ -358,7 +365,7 @@ export function CharacterScene() {
         return t * t * (3 - 2 * t);
       };
 
-      const setProps = (sit: number, deskAmount: number) => {
+      const setProps = (sit: number, deskAmount: number, lapAmount: number) => {
         const chairOpacity = fade(sit);
         chair.group.visible = chairOpacity > 0.02;
         for (const m of chair.materials) m.opacity = chairOpacity;
@@ -366,9 +373,14 @@ export function CharacterScene() {
         const deskOpacity = fade(deskAmount);
         desk.group.visible = deskOpacity > 0.02;
         for (const m of desk.materials) m.opacity = deskOpacity;
-        // The MacBook screen light is a light, not a material — fade it too,
-        // or a ghost glow lingers on him after the desk is gone.
+        // The MacBook screen lights are lights, not materials — fade them
+        // too, or a ghost glow lingers on him after the prop is gone.
         desk.screenLight.intensity = deskOpacity * 4.5;
+
+        const lapOpacity = fade(lapAmount);
+        lap.group.visible = lapOpacity > 0.02;
+        for (const m of lap.materials) m.opacity = lapOpacity;
+        lap.screenLight.intensity = lapOpacity * 3;
       };
 
       poseFromScroll(target, 1);
@@ -380,7 +392,7 @@ export function CharacterScene() {
         // Reduced motion: one static frame in the resting pose. No travel,
         // no idle, no loop.
         applyPose(skel, livePoses[0]);
-        setProps(livePoses[0].sit, livePoses[0].desk);
+        setProps(livePoses[0].sit, livePoses[0].desk, livePoses[0].lap);
         practical.position.set(
           livePoses[0].rootX * halfWidth + 1,
           livePoses[0].rootY * halfHeight + 1,
@@ -442,8 +454,9 @@ export function CharacterScene() {
         }
 
         applyPose(skel, current);
-        setProps(current.sit, current.desk);
+        setProps(current.sit, current.desk, current.lap);
         desk.updateScreen(elapsed);
+        lap.updateScreen(elapsed + 2.7); // out of phase with the desk editor
 
         // ---- Idle life, layered on top of the settled pose ------------------
         // Breath: the chest rises on a slow cycle.
