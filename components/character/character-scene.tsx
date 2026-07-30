@@ -298,14 +298,13 @@ export function CharacterScene() {
       const timer = new THREE.Timer();
 
       // ---- Presence fade ----------------------------------------------------
-      // He's a solid, warm-lit figure on a fixed canvas: whenever the page
-      // moves past him (scrolling) or he's moving across the page (dashing),
-      // he sits on top of details he shouldn't. While either is happening he
-      // recedes to a faint ghost; once everything settles he returns to full
-      // presence in his empty lane. Faded on the canvas element, not the
-      // materials — free, and immune to transparency-sorting artifacts.
-      let lastScrollY = window.scrollY;
-      let scrollVel = 0; // smoothed, in viewport-heights per second
+      // He stays planted at FULL presence while you scroll within a section —
+      // his dwell spot is that section's empty lane, so he covers nothing.
+      // Only while he's actually travelling between beats (the next section
+      // has taken the viewport and he's mid-dash across the page) does he
+      // recede to a faint ghost, so the trip never covers any details. Faded
+      // on the canvas element, not the materials — free, and immune to
+      // transparency-sorting artifacts.
       let presence = 1;
       const GHOST = 0.22;
 
@@ -317,16 +316,9 @@ export function CharacterScene() {
         const dt = Math.min(timer.getDelta(), 0.05);
         const elapsed = timer.getElapsed();
 
-        const rawVel =
-          Math.abs(window.scrollY - lastScrollY) / (dt * window.innerHeight);
-        lastScrollY = window.scrollY;
-        scrollVel += (rawVel - scrollVel) * (1 - Math.exp(-7 * dt));
-
         poseFromScroll(target);
 
-        const velFade = Math.min(1, Math.max(0, (scrollVel - 0.08) / 0.5));
-        const veil = Math.max(velFade, dashActivity);
-        const presenceTarget = 1 - (1 - GHOST) * veil;
+        const presenceTarget = 1 - (1 - GHOST) * dashActivity;
         presence += (presenceTarget - presence) * (1 - Math.exp(-6 * dt));
         renderer.domElement.style.opacity = presence.toFixed(3);
 
