@@ -90,8 +90,8 @@ export const POSES: Pose[] = [
   {
     rootX: 0.70, rootY: 0.42, rootZ: -1.2, rootRotX: 0, rootRotY: d(26), rootRotZ: 0, scale: 0.95,
     torsoRotX: d(6), torsoRotY: d(-4), headRotX: d(16), headRotY: d(-8), sit: 1, desk: 0, lap: 1,
-    armL: [0.16, -0.70, 0.5], foreL: [-0.22, 0.26, 0.85],
-    armR: [-0.16, -0.70, 0.5], foreR: [0.22, 0.26, 0.85],
+    armL: [0.22, -0.62, 0.55], foreL: [-0.06, 0.34, 0.88],
+    armR: [-0.22, -0.62, 0.55], foreR: [0.06, 0.34, 0.88],
     legL: [0.14, -0.18, 0.95], shinL: [0.06, -0.95, 0.12],
     legR: [-0.14, -0.18, 0.95], shinR: [-0.06, -0.95, 0.12],
   },
