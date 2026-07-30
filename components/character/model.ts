@@ -612,7 +612,7 @@ export function buildTable(): MacBook {
   }
 
   const mac = buildMacBook();
-  mac.group.position.set(0, 0.133, 0.48);
+  mac.group.position.set(0, 0.133, 0.6);
   group.add(mac.group);
 
   return {
