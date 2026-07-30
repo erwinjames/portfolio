@@ -574,6 +574,60 @@ export function buildMacBook(): MacBook {
   };
 }
 
+/**
+ * The About-beat table: a proper four-legged table sized for the seated
+ * character, with the MacBook on top at typing height — so his hands land on
+ * the key deck instead of the laptop floating on his knees.
+ */
+export function buildTable(): MacBook {
+  const group = new THREE.Group();
+  const geos: THREE.BufferGeometry[] = [];
+
+  const wood = new THREE.MeshStandardMaterial({
+    color: 0x2e2118,
+    roughness: 0.7,
+    metalness: 0.08,
+    flatShading: true,
+    transparent: true,
+    opacity: 0,
+  });
+
+  const box = (
+    w: number, h: number, dp: number,
+    x: number, y: number, z: number,
+  ) => {
+    const g = new THREE.BoxGeometry(w, h, dp);
+    geos.push(g);
+    const mesh = new THREE.Mesh(g, wood);
+    mesh.position.set(x, y, z);
+    group.add(mesh);
+  };
+
+  // Top, with legs down to the same floor as the chair's.
+  box(0.95, 0.05, 0.55, 0, 0.1, 0.62);
+  for (const sx of [-1, 1] as const) {
+    for (const sz of [-1, 1] as const) {
+      box(0.05, 0.9, 0.05, 0.44 * sx, -0.37, 0.62 + 0.22 * sz);
+    }
+  }
+
+  const mac = buildMacBook();
+  mac.group.position.set(0, 0.133, 0.55);
+  group.add(mac.group);
+
+  return {
+    group,
+    materials: [wood, ...mac.materials],
+    screenLight: mac.screenLight,
+    updateScreen: mac.updateScreen,
+    dispose: () => {
+      for (const g of geos) g.dispose();
+      wood.dispose();
+      mac.dispose();
+    },
+  };
+}
+
 /** The Work-beat desk, with a MacBook composed on top of it. */
 export function buildDesk(): MacBook {
   const group = new THREE.Group();

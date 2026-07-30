@@ -8,7 +8,7 @@ import {
   aimBone,
   buildChair,
   buildDesk,
-  buildMacBook,
+  buildTable,
   prepareModel,
   setBone,
   type Skeleton,
@@ -351,10 +351,8 @@ export function CharacterScene() {
       desk.group.position.set(0, 0.02, 0);
       skel.root.add(desk.group);
 
-      // The About beat's MacBook, open on his lap while he sits.
-      const lap = buildMacBook();
-      lap.group.position.set(0, -0.02, 0.3);
-      lap.group.rotation.x = THREE.MathUtils.degToRad(4);
+      // The About beat's table, MacBook on top at typing height.
+      const lap = buildTable();
       skel.root.add(lap.group);
 
       // Remapped to the tail of the blend: props only materialise once he's
