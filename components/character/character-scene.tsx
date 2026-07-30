@@ -203,29 +203,36 @@ export function CharacterScene() {
     const velocity: Record<string, number> = {};
     for (const k of POSE_KEYS) velocity[k] = 0;
 
-    // Dwell-and-dash. The character HOLDS his pose while a section is anywhere
-    // near view, and makes the trip to the next beat only inside the middle
-    // slice of the gap between sections. Interpolating linearly across the
-    // whole gap parked him mid-journey — usually on top of the copy — at most
-    // scroll offsets.
-    const HOLD_IN = 0.34;
-    const HOLD_OUT = 0.66;
+    // ---- Time-based travel --------------------------------------------------
+    // Travel used to be scrubbed by scroll position, which meant a fast wheel
+    // flick teleported him across the gap and a nav-link jump snapped him
+    // instantly. Now scroll only decides WHICH beat he belongs to (with
+    // hysteresis so the boundary doesn't flap); the flight itself always runs
+    // on the clock — a fixed-duration eased glide, identical however fast you
+    // scroll. Retargeting mid-flight snapshots the rendered state and glides
+    // on from there, so chained fast scrolls stay continuous.
+    const TRAVEL_S = 1.05;
+    /** Commit to the next beat when 58% of the way there; back at 42%. */
+    const COMMIT = 0.58;
 
-    /** How mid-travel the last sampled pose was: 0 parked at a beat, 1 at the
-     *  midpoint of a dash. Feeds the presence fade below. */
+    let beat = 0;
+    let travel = 1; // 0..1 flight progress; 1 = arrived
+    const fromSnap = clonePose(POSES[0]);
+    let fromOff = 0;
+
+    /** How mid-flight he is: 0 parked, 1 at the midpoint. Feeds the ghost. */
     let dashActivity = 0;
 
     /** Extra world-Y so he rides WITH the page instead of hanging fixed in
-     *  the viewport. Anchored to the active section's stop: as you scroll past
-     *  it he moves up exactly like the content beside him. Blended between the
-     *  two anchors during a dash. */
+     *  the viewport. Anchored to the active beat's stop: as you scroll past it
+     *  he moves up exactly like the content beside him. */
     let docOffsetY = 0;
 
     /** World units per scrolled pixel at a given character depth. */
     const worldPerPx = (z: number) =>
       (2 * halfHeight * ((CAMERA_Z - z) / CAMERA_Z)) / window.innerHeight;
 
-    const poseFromScroll = (out: Pose) => {
+    const poseFromScroll = (out: Pose, dt: number) => {
       const maxScroll =
         document.documentElement.scrollHeight - window.innerHeight;
       const t = maxScroll > 0 ? window.scrollY / maxScroll : 0;
@@ -236,20 +243,39 @@ export function CharacterScene() {
 
       const span = stops[i + 1] - stops[i];
       const u = span > 0 ? (clamped - stops[i]) / span : 0;
-      const dash = Math.min(1, Math.max(0, (u - HOLD_IN) / (HOLD_OUT - HOLD_IN)));
-      dashActivity = 4 * dash * (1 - dash);
 
-      const eased = smoothstep(dash);
+      // Which beat does the viewport belong to right now?
+      let desired = beat;
+      if (beat === i) desired = u > COMMIT ? i + 1 : i;
+      else if (beat === i + 1) desired = u < 1 - COMMIT ? i : i + 1;
+      else desired = u > 0.5 ? i + 1 : i; // jumped several sections at once
 
-      const offA =
-        (window.scrollY - stops[i] * maxScroll) *
-        worldPerPx(livePoses[i].rootZ);
-      const offB =
-        (window.scrollY - stops[i + 1] * maxScroll) *
-        worldPerPx(livePoses[i + 1].rootZ);
-      docOffsetY = offA + (offB - offA) * eased;
+      if (desired !== beat) {
+        // Depart from exactly what's on screen: snapshot the spring-rendered
+        // pose and his current ride offset, then glide toward the new anchor.
+        for (const k of POSE_KEYS) fromSnap[k] = current[k];
+        for (const k of POSE_DIRS) {
+          const c = current[k];
+          const f = fromSnap[k];
+          f[0] = c[0];
+          f[1] = c[1];
+          f[2] = c[2];
+        }
+        fromOff = docOffsetY;
+        beat = desired;
+        travel = 0;
+      }
 
-      return lerpPose(livePoses[i], livePoses[i + 1], eased, out);
+      travel = Math.min(1, travel + dt / TRAVEL_S);
+      const e = smoothstep(travel);
+      dashActivity = 4 * e * (1 - e);
+
+      const to = livePoses[beat];
+      const ride =
+        (window.scrollY - stops[beat] * maxScroll) * worldPerPx(to.rootZ);
+
+      docOffsetY = fromOff + (ride - fromOff) * e;
+      return lerpPose(fromSnap, to, e, out);
     };
 
     const charQuat = new THREE.Quaternion();
@@ -335,7 +361,7 @@ export function CharacterScene() {
         for (const m of desk.materials) m.opacity = deskOpacity;
       };
 
-      poseFromScroll(target);
+      poseFromScroll(target, 1);
       Object.assign(current, target);
       for (const k of POSE_DIRS) current[k] = [...target[k]] as typeof current.armL;
       applyPose(skel, current);
@@ -377,7 +403,7 @@ export function CharacterScene() {
         const dt = Math.min(timer.getDelta(), 0.05);
         const elapsed = timer.getElapsed();
 
-        poseFromScroll(target);
+        poseFromScroll(target, dt);
 
         const presenceTarget = 1 - (1 - GHOST) * dashActivity;
         presence += (presenceTarget - presence) * (1 - Math.exp(-6 * dt));
