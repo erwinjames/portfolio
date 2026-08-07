@@ -67,10 +67,10 @@ export type Skeleton = {
  *  mids, warm bone in the highlights. These are the page's own colours. */
 const RAMP: [number, string][] = [
   [0.0, "#0b0d11"],
-  [0.45, "#4a3520"],
-  [0.72, "#a9743a"],
-  [0.9, "#d7b184"],
-  [1.0, "#f0e3cd"],
+  [0.45, "#43301d"],
+  [0.72, "#996a35"],
+  [0.9, "#c19a67"],
+  [1.0, "#d9bd93"],
 ];
 
 /**

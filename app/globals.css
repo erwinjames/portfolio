@@ -35,6 +35,18 @@ body {
   overflow-x: clip;
 }
 
+/* Caption-style legibility: an ink-colored shadow is invisible against the
+   ink background, but wherever the bright 3D character (or dust) passes
+   behind text it carves a dark edge around the glyphs, so copy stays
+   readable over him. */
+main,
+header,
+footer {
+  text-shadow:
+    0 1px 2px rgba(8, 9, 11, 0.9),
+    0 2px 14px rgba(8, 9, 11, 0.75);
+}
+
 ::selection {
   background: var(--amber);
   color: var(--ink);
