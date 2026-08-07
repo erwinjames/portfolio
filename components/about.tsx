@@ -6,10 +6,12 @@ export function About() {
   return (
     <section
       id="about"
-      className="relative mx-auto w-full max-w-6xl px-6 py-32 md:px-10 md:py-48"
+      className="relative mx-auto w-full max-w-6xl px-6 py-40 md:px-10 md:py-48"
     >
       <Reveal>
         <p className="font-mono text-xs uppercase tracking-[0.35em] text-muted">
+          <span className="text-amber">01</span>
+          <span className="mx-2 opacity-30">/</span>
           About
         </p>
       </Reveal>

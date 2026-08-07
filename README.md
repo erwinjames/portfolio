@@ -64,6 +64,12 @@ the core editorial look.
 - **Film grain**: a fixed, full-screen SVG `feTurbulence` noise (inline data
   URI, no asset) at 13% opacity, jittered by a 2-frame steps() animation.
 - **Vignette**: a fixed radial gradient darkening the frame edges.
+- **Ambient dust**: ~140 floating motes rendered as a `THREE.Points` cloud
+  with a custom `ShaderMaterial` — soft round sprites (radial alpha falloff in
+  the fragment shader), per-mote drift and twinkle, additive blending, and
+  **depth-dependent scroll parallax**: near motes ride the scroll faster than
+  far ones (the vertex shader offsets by `uScroll × depthFactor` and wraps),
+  which makes the page read as a lit volume.
 
 Both are pure CSS overlays — they cost nothing and give the "shot on film"
 finish.
@@ -221,7 +227,9 @@ and fade via the pose scalars — remapped to the **tail of the transition**
 
 ### Responsive strategy
 
-- Scale tiers: full under ≥1100px, 0.58 below that, 0.46 under 768px.
+- Scale tiers: full at ≥1100px, 0.58 below that, 0.68 under 768px
+  (phones get a *larger* relative character — he lives in section gaps there,
+  so he can afford the size).
 - **Phones have no side lanes** (single-column layout), so the About / Work /
   Projects beats re-anchor to the **empty padding gap below their section** —
   he appears as a vignette between sections and can never cover words. Beat

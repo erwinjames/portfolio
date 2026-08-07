@@ -27,10 +27,12 @@ function Band({ reverse = false }: { reverse?: boolean }) {
 
 export function Skills() {
   return (
-    <section id="skills" className="relative py-32 md:py-48">
+    <section id="skills" className="relative py-40 md:py-48">
       <div className="mx-auto w-full max-w-6xl px-6 md:px-10">
         <Reveal>
           <p className="font-mono text-xs uppercase tracking-[0.35em] text-muted">
+            <span className="text-amber">04</span>
+            <span className="mx-2 opacity-30">/</span>
             Toolkit
           </p>
         </Reveal>

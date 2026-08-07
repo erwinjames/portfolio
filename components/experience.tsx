@@ -47,12 +47,14 @@ export function Experience() {
   return (
     <section
       id="work"
-      className="relative mx-auto w-full max-w-6xl px-6 py-32 md:px-10 md:py-48"
+      className="relative mx-auto w-full max-w-6xl px-6 py-40 md:px-10 md:py-48"
     >
       <div className="grid gap-16 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:gap-20">
         {/* Sticky year — the "camera" that stays while the reel runs past it */}
         <div className="md:sticky md:top-0 md:h-screen md:pt-[38vh]">
           <p className="font-mono text-xs uppercase tracking-[0.35em] text-muted">
+            <span className="text-amber">02</span>
+            <span className="mx-2 opacity-30">/</span>
             Experience
           </p>
           <p

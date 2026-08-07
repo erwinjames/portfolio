@@ -87,9 +87,16 @@ export function Hero() {
             </span>
           </h1>
 
+          <p
+            className="letter mt-6 font-mono text-xs uppercase tracking-[0.3em] text-amber"
+            style={{ "--letter-delay": "700ms" } as React.CSSProperties}
+          >
+            {profile.role}
+          </p>
+
           {/* Kept in a single left-hand column: the character travels through
               the right half of the hero and must not fight the copy. */}
-          <div className="mt-10 flex max-w-md flex-col items-start gap-8">
+          <div className="mt-8 flex max-w-md flex-col items-start gap-8">
             <p
               className="letter text-lg leading-relaxed text-muted"
               style={{ "--letter-delay": "820ms" } as React.CSSProperties}

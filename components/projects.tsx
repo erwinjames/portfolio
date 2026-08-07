@@ -25,13 +25,15 @@ export function Projects() {
   return (
     <section
       id="projects"
-      className="relative mx-auto w-full max-w-6xl px-6 py-32 md:px-10 md:py-48"
+      className="relative mx-auto w-full max-w-6xl px-6 py-40 md:px-10 md:py-48"
     >
       <div className="grid gap-16 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)] md:gap-20">
         {/* Left rail — the character presents the grid from beneath this. */}
         <div>
           <Reveal>
             <p className="font-mono text-xs uppercase tracking-[0.35em] text-muted">
+              <span className="text-amber">03</span>
+              <span className="mx-2 opacity-30">/</span>
               Projects
             </p>
           </Reveal>
@@ -65,7 +67,7 @@ export function Projects() {
                 href={project.repo}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex h-full flex-col border border-line p-6 transition-colors duration-300 hover:border-amber/60 hover:bg-bone/[0.03]"
+                className="group flex h-full flex-col border border-line p-6 transition-[border-color,background-color,box-shadow] duration-300 hover:border-amber/60 hover:bg-bone/[0.03] hover:shadow-[0_0_60px_-15px_rgba(217,154,78,0.45)]"
               >
                 <div className="flex items-start justify-between gap-4">
                   <h3 className="font-display text-2xl leading-tight">

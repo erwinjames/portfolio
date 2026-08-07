@@ -106,6 +106,83 @@ export function CharacterScene() {
     const practical = new THREE.PointLight(0xe0a355, 7, 9, 2);
     scene.add(practical);
 
+    // ---- Ambient dust -------------------------------------------------------
+    // A sparse field of softly glowing motes drifting behind him, with
+    // depth-dependent scroll parallax — near motes ride faster than far ones,
+    // which is what sells the page as a lit volume instead of a flat backdrop.
+    // Custom ShaderMaterial: round soft sprites with a per-mote twinkle,
+    // additive blending, no depth write.
+    const DUST_COUNT = 140;
+    const dustGeo = new THREE.BufferGeometry();
+    {
+      const pos = new Float32Array(DUST_COUNT * 3);
+      const size = new Float32Array(DUST_COUNT);
+      const phase = new Float32Array(DUST_COUNT);
+      for (let i = 0; i < DUST_COUNT; i++) {
+        pos[i * 3] = (Math.random() * 2 - 1) * 7;
+        pos[i * 3 + 1] = (Math.random() * 2 - 1) * 4.5;
+        pos[i * 3 + 2] = -2.5 - Math.random() * 5; // always behind him
+        size[i] = 0.6 + Math.random() * 1.6;
+        phase[i] = Math.random() * Math.PI * 2;
+      }
+      dustGeo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+      dustGeo.setAttribute("aSize", new THREE.BufferAttribute(size, 1));
+      dustGeo.setAttribute("aPhase", new THREE.BufferAttribute(phase, 1));
+    }
+
+    const dustMat = new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      uniforms: {
+        uTime: { value: 0 },
+        uScroll: { value: 0 },
+        uPixelRatio: { value: 1 },
+      },
+      vertexShader: /* glsl */ `
+        attribute float aSize;
+        attribute float aPhase;
+        uniform float uTime;
+        uniform float uScroll;
+        uniform float uPixelRatio;
+        varying float vTwinkle;
+
+        void main() {
+          vec3 p = position;
+
+          // Slow drift, unique per mote.
+          p.x += sin(uTime * 0.12 + aPhase) * 0.4;
+          p.y += sin(uTime * 0.09 + aPhase * 1.7) * 0.3;
+
+          // Scroll parallax: depthFactor 1 at z=-2.5 (near) -> ~0.3 at z=-7.5.
+          float depthFactor = (p.z + 8.5) / 6.0;
+          p.y += uScroll * 0.0016 * depthFactor;
+          // Wrap vertically so the field never runs out while scrolling.
+          p.y = mod(p.y + 4.5, 9.0) - 4.5;
+
+          vTwinkle = 0.55 + 0.45 * sin(uTime * (0.6 + aPhase * 0.1) + aPhase);
+
+          vec4 mv = modelViewMatrix * vec4(p, 1.0);
+          gl_PointSize = aSize * uPixelRatio * 90.0 / -mv.z;
+          gl_Position = projectionMatrix * mv;
+        }
+      `,
+      fragmentShader: /* glsl */ `
+        varying float vTwinkle;
+
+        void main() {
+          // Soft round sprite: alpha falls off from the centre.
+          float d = length(gl_PointCoord - 0.5);
+          float a = smoothstep(0.5, 0.05, d) * vTwinkle * 0.32;
+          // Warm bone-amber, matching the page palette.
+          gl_FragColor = vec4(0.85, 0.66, 0.38, a);
+        }
+      `,
+    });
+
+    const dust = new THREE.Points(dustGeo, dustMat);
+    scene.add(dust);
+
     // ---- Viewport-derived placement -----------------------------------------
     let halfHeight = 1;
     let halfWidth = 1;
@@ -185,6 +262,7 @@ export function CharacterScene() {
 
       renderer.setSize(w, h);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.75));
+      dustMat.uniforms.uPixelRatio.value = renderer.getPixelRatio();
 
       halfHeight = Math.tan(THREE.MathUtils.degToRad(CAMERA_FOV / 2)) * CAMERA_Z;
       halfWidth = halfHeight * camera.aspect;
@@ -192,7 +270,7 @@ export function CharacterScene() {
       // He's authored large for desktop; on narrower screens the copy runs
       // nearly full width, so scale him down harder to stay a background
       // element rather than sitting on the words.
-      scaleMultiplier = w < 768 ? 0.46 : w < 1100 ? 0.58 : 1;
+      scaleMultiplier = w < 768 ? 0.68 : w < 1100 ? 0.58 : 1;
 
       rebuildPoses();
       measure();
@@ -453,6 +531,8 @@ export function CharacterScene() {
 
         applyPose(skel, current);
         setProps(current.sit, current.desk, current.lap);
+        dustMat.uniforms.uTime.value = elapsed;
+        dustMat.uniforms.uScroll.value = window.scrollY;
         desk.updateScreen(elapsed);
         lap.updateScreen(elapsed + 2.7); // out of phase with the desk editor
 
@@ -520,6 +600,8 @@ export function CharacterScene() {
       window.clearTimeout(remeasure);
       window.removeEventListener("resize", onResize);
       skel?.dispose();
+      dustGeo.dispose();
+      dustMat.dispose();
       envRT.dispose();
       pmrem.dispose();
       renderer.dispose();
