@@ -71,8 +71,9 @@ the core editorial look.
   far ones (the vertex shader offsets by `uScroll × depthFactor` and wraps),
   which makes the page read as a lit volume.
 
-Both are pure CSS overlays — they cost nothing and give the "shot on film"
-finish.
+Grain and vignette are pure CSS overlays that cost nothing; the dust lives in
+the WebGL scene alongside the character. Together they give the "shot on
+film" finish.
 
 ---
 
