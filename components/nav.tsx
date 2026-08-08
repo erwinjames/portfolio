@@ -63,31 +63,31 @@ export function Nav() {
       {/* Scrim so section text scrolling underneath doesn't collide with the bar */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 backdrop-blur-sm [mask-image:linear-gradient(to_bottom,black_45%,transparent)]"
+        className="pointer-events-none absolute inset-0 backdrop-blur-md border-b border-line/40"
         style={{
           background:
-            "linear-gradient(to bottom, rgba(8,9,11,0.92), rgba(8,9,11,0))",
+            "linear-gradient(to bottom, rgba(250, 249, 246, 0.92), rgba(250, 249, 246, 0.8))",
         }}
       />
 
-      <div className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6 md:px-10">
-        {/* The wordmark would wrap and crowd the links on narrow screens. */}
+      <div className="relative mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-4 sm:px-6 md:px-10">
+        {/* The wordmark on desktop/tablet */}
         <a
           href="#top"
-          className="hidden font-mono text-xs uppercase tracking-[0.25em] whitespace-nowrap text-bone sm:block"
+          className="hidden font-mono text-xs font-semibold uppercase tracking-[0.25em] whitespace-nowrap text-bone sm:block"
         >
           {profile.shortName}
         </a>
 
-        <nav>
-          <ul className="flex gap-5 md:gap-8">
+        <nav className="w-full sm:w-auto overflow-x-auto py-1 scrollbar-none">
+          <ul className="flex items-center justify-between gap-3 sm:gap-6 md:gap-8 whitespace-nowrap">
             {SECTIONS.map((section) => (
               <li key={section.id}>
                 <a
                   href={`#${section.id}`}
-                  className={`font-mono text-xs uppercase tracking-[0.2em] transition-colors duration-300 ${
+                  className={`font-mono text-[11px] sm:text-xs font-medium uppercase tracking-[0.18em] transition-colors duration-300 ${
                     active === section.id
-                      ? "text-amber"
+                      ? "text-amber font-bold"
                       : "text-muted hover:text-bone"
                   }`}
                   aria-current={active === section.id ? "true" : undefined}

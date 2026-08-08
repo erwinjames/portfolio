@@ -31,11 +31,11 @@ export default function Home() {
       </main>
 
       <footer className="relative z-10 border-t border-line">
-        <div className="mx-auto flex w-full max-w-6xl flex-col justify-between gap-2 px-6 py-8 font-mono text-[11px] uppercase tracking-[0.2em] text-muted sm:flex-row md:px-10">
+        <div className="mx-auto flex w-full max-w-6xl flex-col justify-between gap-2 px-4 py-8 font-mono text-[11px] font-medium uppercase tracking-[0.2em] text-muted sm:flex-row sm:px-6 md:px-10">
           <p>© 2026 Erwin James Manugas</p>
           <p>
             Next.js <span className="text-amber">×</span> Three.js — designed in
-            ink <span className="text-amber">&</span> amber
+            ivory <span className="text-amber">&</span> amber
           </p>
         </div>
       </footer>

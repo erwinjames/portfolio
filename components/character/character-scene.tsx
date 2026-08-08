@@ -83,35 +83,27 @@ export function CharacterScene() {
     const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
     scene.environment = envRT.texture;
 
-    // ---- Lighting: a low ambient bed, a restrained key, and a hot amber rim.
-    // The rim is the loudest light on purpose — it carves his edge out of the
-    // ink and ties him to the page's accent colour, which is what sells the
-    // whole thing as one image rather than a model floating over a website.
-    scene.add(new THREE.AmbientLight(0x222836, 0.5));
+    // ---- Lighting: tuned for crisp contrast against a light/white background.
+    scene.add(new THREE.AmbientLight(0xf8fafc, 1.25));
 
-    const key = new THREE.DirectionalLight(0xffdcb0, 1.15);
+    const key = new THREE.DirectionalLight(0xfff7ed, 2.2);
     key.position.set(3, 4.5, 5);
     scene.add(key);
 
-    const rim = new THREE.DirectionalLight(0xd99a4e, 4.2);
+    const rim = new THREE.DirectionalLight(0xd97706, 3.8);
     rim.position.set(-4.5, 1.8, -3.5);
     scene.add(rim);
 
-    const bounce = new THREE.PointLight(0x6f86ad, 3.5, 16);
+    const bounce = new THREE.PointLight(0xe2e8f0, 2.5, 16);
     bounce.position.set(-2.5, -1.5, 3);
     scene.add(bounce);
 
-    // A warm practical that rides along with him, so he never falls fully flat
-    // against the page as he travels.
-    const practical = new THREE.PointLight(0xe0a355, 7, 9, 2);
+    // A warm practical that rides along with him, so he never falls fully flat.
+    const practical = new THREE.PointLight(0xd97706, 5.5, 9, 2);
     scene.add(practical);
 
     // ---- Ambient dust -------------------------------------------------------
-    // A sparse field of softly glowing motes drifting behind him, with
-    // depth-dependent scroll parallax — near motes ride faster than far ones,
-    // which is what sells the page as a lit volume instead of a flat backdrop.
-    // Custom ShaderMaterial: round soft sprites with a per-mote twinkle,
-    // additive blending, no depth write.
+    // Soft floating warm motes tuned for light mode background.
     const DUST_COUNT = 140;
     const dustGeo = new THREE.BufferGeometry();
     {
@@ -133,7 +125,7 @@ export function CharacterScene() {
     const dustMat = new THREE.ShaderMaterial({
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.NormalBlending,
       uniforms: {
         uTime: { value: 0 },
         uScroll: { value: 0 },
@@ -173,9 +165,9 @@ export function CharacterScene() {
         void main() {
           // Soft round sprite: alpha falls off from the centre.
           float d = length(gl_PointCoord - 0.5);
-          float a = smoothstep(0.5, 0.05, d) * vTwinkle * 0.32;
-          // Warm bone-amber, matching the page palette.
-          gl_FragColor = vec4(0.85, 0.66, 0.38, a);
+          float a = smoothstep(0.5, 0.05, d) * vTwinkle * 0.4;
+          // Warm bronze-amber motes visible against light background.
+          gl_FragColor = vec4(0.85, 0.47, 0.02, a);
         }
       `,
     });
@@ -240,16 +232,16 @@ export function CharacterScene() {
       livePoses = POSES.map(clonePose);
       if (!isPhone()) return;
 
-      // Gap beats sit near the centre of their gap, offset side to side so
-      // consecutive vignettes don't feel stamped. Projects goes LEFT because
-      // his pointing arm extends right and would clip the screen edge.
-      const gapX: Record<number, number> = { 1: 0.22, 2: -0.22, 3: -0.3 };
+      // Gap beats sit near the centre of their gap on mobile, scaled down
+      // so they never fight or overlap section text.
+      const gapX: Record<number, number> = { 1: 0.22, 2: 0.22, 3: -0.25 };
       for (const i of GAP_BEATS) {
         livePoses[i].rootX = gapX[i] ?? 0;
         livePoses[i].rootY = 0;
+        livePoses[i].scale = 0.65;
       }
       // Hero: drop him below the tagline into the open bottom half.
-      livePoses[0].rootX = 0.6;
+      livePoses[0].rootX = 0.55;
       livePoses[0].rootY = -0.52;
     };
 

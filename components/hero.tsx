@@ -63,32 +63,32 @@ export function Hero() {
       aria-label="Introduction"
     >
       <div className="sticky top-0 flex h-screen items-center overflow-hidden">
-        {/* Warm key light behind the name */}
+        {/* Warm radial ambient glow behind the name */}
         <div
           className="hero-glow pointer-events-none absolute left-1/2 top-1/2 h-[70vh] w-[70vh] rounded-full blur-[120px]"
           style={{
             background:
-              "radial-gradient(circle, rgba(217,154,78,0.55), transparent 65%)",
+              "radial-gradient(circle, rgba(217,119,6,0.18), transparent 65%)",
           }}
         />
 
-        <div className="hero-camera relative mx-auto w-full max-w-6xl px-6 md:px-10">
+        <div className="hero-camera relative mx-auto w-full max-w-6xl px-4 sm:px-6 md:px-10">
           <p
-            className="letter font-mono text-xs uppercase tracking-[0.35em] text-muted"
+            className="letter font-mono text-xs uppercase tracking-[0.35em] text-muted font-medium"
             style={{ "--letter-delay": "120ms" } as React.CSSProperties}
           >
             {profile.location}
           </p>
 
-          <h1 className="mt-8 font-display text-[clamp(3rem,11vw,10rem)] leading-[0.9] tracking-tight">
+          <h1 className="mt-6 sm:mt-8 font-display text-[clamp(2.5rem,9.5vw,9.5rem)] leading-[0.92] tracking-tight text-bone">
             <RisingWord word={words[0] ?? ""} offset={280} />{" "}
-            <span className="text-amber italic">
+            <span className="text-amber italic font-normal">
               <RisingWord word={words.slice(1).join(" ")} offset={430} />
             </span>
           </h1>
 
           <p
-            className="letter mt-6 font-mono text-xs uppercase tracking-[0.3em] text-amber"
+            className="letter mt-4 sm:mt-6 font-mono text-xs font-semibold uppercase tracking-[0.3em] text-amber"
             style={{ "--letter-delay": "700ms" } as React.CSSProperties}
           >
             {profile.role}
@@ -96,9 +96,9 @@ export function Hero() {
 
           {/* Kept in a single left-hand column: the character travels through
               the right half of the hero and must not fight the copy. */}
-          <div className="mt-8 flex max-w-md flex-col items-start gap-8">
+          <div className="mt-6 sm:mt-8 flex max-w-md flex-col items-start gap-6 sm:gap-8">
             <p
-              className="letter text-lg leading-relaxed text-muted"
+              className="letter text-base sm:text-lg leading-relaxed text-muted font-normal"
               style={{ "--letter-delay": "820ms" } as React.CSSProperties}
             >
               {profile.tagline} Web developer and systems administrator, seven
@@ -107,7 +107,7 @@ export function Hero() {
 
             <a
               href="#contact"
-              className="letter sweep font-mono text-sm uppercase tracking-[0.2em] text-bone"
+              className="letter inline-flex items-center justify-center rounded-full border border-amber/80 bg-amber/10 px-6 py-3 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-amber transition-all duration-300 hover:bg-amber hover:text-white hover:shadow-md"
               style={{ "--letter-delay": "980ms" } as React.CSSProperties}
             >
               Get in touch

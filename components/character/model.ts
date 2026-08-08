@@ -63,14 +63,14 @@ export type Skeleton = {
   dispose: () => void;
 };
 
-/** The duotone ramp he gets remapped onto: ink in shadow, amber through the
- *  mids, warm bone in the highlights. These are the page's own colours. */
+/** The duotone ramp he gets remapped onto: deep charcoal in shadow, rich amber through the
+ *  mids, warm cream in the highlights. Tailored for a crisp light background. */
 const RAMP: [number, string][] = [
-  [0.0, "#0b0d11"],
-  [0.45, "#43301d"],
-  [0.72, "#996a35"],
-  [0.9, "#c19a67"],
-  [1.0, "#d9bd93"],
+  [0.0, "#18181b"],
+  [0.35, "#78350f"],
+  [0.65, "#d97706"],
+  [0.85, "#f59e0b"],
+  [1.0, "#fef3c7"],
 ];
 
 /**

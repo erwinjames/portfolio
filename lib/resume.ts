@@ -179,7 +179,7 @@ export const marqueeSkills = [
 export const education = {
   school: "Cordova Public College",
   location: "Cordova, Cebu",
-  detail: "Completed 2024",
+  detail: "Completed 2019",
 } as const;
 
 export const stats = [

@@ -95,12 +95,11 @@ export const POSES: Pose[] = [
     legL: [0.14, -0.18, 0.95], shinL: [0.06, -0.95, 0.12],
     legR: [-0.14, -0.18, 0.95], shinR: [-0.06, -0.95, 0.12],
   },
-  // 2 — Work: the "at the desk" beat, in the empty lower-left column under
-  //     the sticky year. Staged over-the-shoulder — his back is angled to the
-  //     camera so the MacBook's coding screen faces the viewer.
+  // 2 — Work: the "at the desk" beat, placed in the far right lane on desktop
+  //     so it never overlaps the left sticky year or the job description text.
   {
-    rootX: -0.60, rootY: -0.46, rootZ: -1.0, rootRotX: 0, rootRotY: d(148), rootRotZ: 0, scale: 0.95,
-    torsoRotX: d(10), torsoRotY: 0, headRotX: d(12), headRotY: 0, sit: 1, desk: 1, lap: 0,
+    rootX: 0.85, rootY: -0.32, rootZ: -1.0, rootRotX: 0, rootRotY: d(-35), rootRotZ: 0, scale: 0.80,
+    torsoRotX: d(10), torsoRotY: 0, headRotX: d(12), headRotY: d(-10), sit: 1, desk: 1, lap: 0,
     armL: [0.20, -0.72, 0.45], foreL: [-0.08, -0.28, 0.92],
     armR: [-0.20, -0.72, 0.45], foreR: [0.08, -0.28, 0.92],
     legL: [0.14, -0.18, 0.95], shinL: [0.06, -0.95, 0.12],
